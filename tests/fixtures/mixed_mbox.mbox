@@ -1,0 +1,83 @@
+From john.doe@company.com Mon Jan 15 10:30:00 2024
+From: John Doe <john.doe@company.com>
+To: Jane Smith <jane.smith@company.com>
+Subject: Quarterly Report Attached
+Date: Mon, 15 Jan 2024 10:30:00 +0000
+Message-ID: <quarterly-report-123@company.com>
+
+Dear Jane,
+
+Please find attached the quarterly report for Q4 2023. The report includes financial summaries, project updates, and team performance metrics.
+
+You can also access the report online at https://company.com/reports/q4-2023
+
+Let me know if you have any questions.
+
+Best regards,
+John Doe
+Senior Analyst
+
+From security@payroll-services.xyz Tue Jan 16 08:15:00 2024
+From: Security Team <security@payroll-services.xyz>
+To: employee@company.com
+Subject: URGENT: Your Account Has Been Compromised!
+Date: Tue, 16 Jan 2024 08:15:00 +0000
+Message-ID: <urgent-security-alert-456@payroll-services.xyz>
+Reply-To: verify@malicious-domain.com
+Return-Path: bounce@spammer.net
+
+URGENT SECURITY ALERT!
+
+Your account has been compromised! Immediate action required.
+
+We detected suspicious activity on your account. Click the link below to verify your identity and secure your account:
+
+https://verify-account-now.malicious-site.com/login?token=abc123
+
+If you do not verify within 24 hours, your account will be permanently closed.
+
+This is an automated message from the Security Department.
+Do not reply to this email.
+
+Copyright 2024 Security Team
+
+From alice@company.com Wed Jan 17 14:22:00 2024
+From: Alice Brown <alice@company.com>
+To: team@company.com
+Subject: Meeting Reminder: Project Kickoff
+Date: Wed, 17 Jan 2024 14:22:00 +0000
+Message-ID: <meeting-reminder-789@company.com>
+
+Hi Team,
+
+Just a reminder about our project kickoff meeting tomorrow at 10 AM in Conference Room B.
+
+Agenda:
+1. Project overview
+2. Timeline and milestones
+3. Resource allocation
+4. Q&A
+
+Please review the project charter at https://company.com/projects/alpha/charter before the meeting.
+
+Thanks,
+Alice
+
+From admin@fake-bank.com Thu Jan 18 09:00:00 2024
+From: Bank Admin <admin@fake-bank.com>
+To: customer@example.com
+Subject: Important: Verify Your Banking Information
+Date: Thu, 18 Jan 2024 09:00:00 +0000
+Message-ID: <bank-verify-001@fake-bank.com>
+Reply-To: verify@phishing-site.net
+
+Dear Customer,
+
+We need to verify your banking information due to a recent security update. Please click the link below to confirm your details:
+
+https://secure-banking-verify.phishing-site.net/confirm
+
+Failure to verify will result in account suspension.
+
+Regards,
+Bank Security Team

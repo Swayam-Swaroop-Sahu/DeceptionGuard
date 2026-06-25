@@ -1,0 +1,22 @@
+From: Security Team <security@payroll-services.xyz>
+To: employee@company.com
+Subject: URGENT: Your Account Has Been Compromised!
+Date: Tue, 16 Jan 2024 08:15:00 +0000
+Message-ID: <urgent-security-alert-456@payroll-services.xyz>
+Reply-To: verify@malicious-domain.com
+Return-Path: bounce@spammer.net
+
+URGENT SECURITY ALERT!
+
+Your account has been compromised! Immediate action required.
+
+We detected suspicious activity on your account. Click the link below to verify your identity and secure your account:
+
+https://verify-account-now.malicious-site.com/login?token=abc123
+
+If you do not verify within 24 hours, your account will be permanently closed.
+
+This is an automated message from the Security Department.
+Do not reply to this email.
+
+Copyright 2024 Security Team
