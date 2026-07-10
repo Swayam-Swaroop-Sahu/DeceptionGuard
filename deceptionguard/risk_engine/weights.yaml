@@ -1,0 +1,6 @@
+factor_weights:
+  claimed_identity_mismatch: 25
+  urgency_high: 30
+  authority_spoof: 20
+  payload_links: 15
+  action_request: 10
