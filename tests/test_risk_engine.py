@@ -1,5 +1,5 @@
 import pytest
-from deceptionguard.risk_engine.scorer import score_graph, FactorContribution, RiskResult
+from src.risk_engine.scorer import score_graph, FactorContribution, RiskResult
 
 
 def test_score_phishing_graph():

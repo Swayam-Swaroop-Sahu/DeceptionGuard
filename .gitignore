@@ -46,3 +46,15 @@ htmlcov/
 
 # Logs
 *.log
+
+# Secrets and API keys
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets.yaml
+config/secrets.yaml
+**/*secret*
+**/*api*key*
+**/*token*

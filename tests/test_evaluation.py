@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 import pandas as pd
-from deceptionguard.evaluation.run_evaluation import (
+from src.evaluation.run_evaluation import (
     load_dataset, evaluate_baseline, evaluate_full_pipeline, 
     evaluate_by_subtype, generate_report
 )

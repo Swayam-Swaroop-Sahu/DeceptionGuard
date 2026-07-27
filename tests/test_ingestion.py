@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
-from deceptionguard.ingestion.parser import parse_eml, parse_mbox
-from deceptionguard.ingestion.email_record import EmailRecord
+from src.ingestion.parser import parse_eml, parse_mbox
+from src.ingestion.email_record import EmailRecord
 
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

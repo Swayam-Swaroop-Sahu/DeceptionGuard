@@ -1,7 +1,7 @@
 import pytest
-from deceptionguard.intent_graph.schema import validate_graph, INTENT_GRAPH_SCHEMA
-from deceptionguard.intent_graph.extractor import extract_intent_graph, _fallback_extract
-from deceptionguard.ingestion.email_record import EmailRecord
+from src.intent_graph.schema import validate_graph, INTENT_GRAPH_SCHEMA
+from src.intent_graph.extractor import extract_intent_graph, _fallback_extract
+from src.ingestion.email_record import EmailRecord
 
 
 def test_validate_graph_valid():

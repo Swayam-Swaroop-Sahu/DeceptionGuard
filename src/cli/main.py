@@ -5,9 +5,9 @@ from pathlib import Path
 
 def scan_email(file_path: str):
     """Scan a single email file and print score + top factors."""
-    from deceptionguard.ingestion.parser import parse_eml
-    from deceptionguard.intent_graph.extractor import extract_intent_graph
-    from deceptionguard.risk_engine.scorer import score_graph
+    from src.ingestion.parser import parse_eml
+    from src.intent_graph.extractor import extract_intent_graph
+    from src.risk_engine.scorer import score_graph
     
     path = Path(file_path)
     if not path.exists():
@@ -83,7 +83,7 @@ def evaluate_dataset(dataset_path: str):
     
     # Run the evaluation module
     result = subprocess.run([
-        sys.executable, "-m", "deceptionguard.evaluation.run_evaluation"
+        sys.executable, "-m", "src.evaluation.run_evaluation"
     ], capture_output=True, text=True, cwd=Path(__file__).parent.parent.parent)
     
     print(result.stdout)

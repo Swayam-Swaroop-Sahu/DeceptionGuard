@@ -7,7 +7,7 @@ from pathlib import Path
 def run_cli(*args):
     """Run CLI command and return result."""
     result = subprocess.run(
-        [sys.executable, "-m", "deceptionguard.cli.main"] + list(args),
+        [sys.executable, "-m", "src.cli.main"] + list(args),
         capture_output=True,
         text=True,
         cwd=Path(__file__).parent.parent
@@ -46,7 +46,7 @@ def test_cli_scan_nonexistent_file():
 
 def test_cli_evaluate_dataset():
     """Test evaluate command with dataset."""
-    result = run_cli("evaluate", "--dataset", "deceptionguard/data/processed/placeholder_test.csv")
+    result = run_cli("evaluate", "--dataset", "src/data/processed/placeholder_test.csv")
     
     assert result.returncode == 0
     assert "Baseline F1" in result.stdout or "Evaluation Report" in result.stdout

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # NVIDIA API Configuration
 NVIDIA_API_KEY = os.environ.get(
     "NVIDIA_API_KEY",
-    "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"
+    "<YOUR_NVIDIA_API_KEY>"
 )
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 NVIDIA_MODEL = "openai/gpt-oss-20b"
