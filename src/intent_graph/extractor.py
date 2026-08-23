@@ -8,13 +8,10 @@ from .schema import validate_graph, INTENT_GRAPH_SCHEMA
 
 logger = logging.getLogger(__name__)
 
-# NVIDIA API Configuration
-NVIDIA_API_KEY = os.environ.get(
-    "NVIDIA_API_KEY",
-    "<YOUR_NVIDIA_API_KEY>"
-)
-NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-NVIDIA_MODEL = "openai/gpt-oss-20b"
+# NVIDIA API Configuration - read from environment (loaded via python-dotenv)
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "").strip()
+NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1").strip()
+NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "openai/gpt-oss-20b").strip()
 
 
 # Fallback: Local heuristic-based extraction (no API needed)
@@ -109,10 +106,6 @@ def _call_nvidia_llm(prompt: str, max_retries: int = 3, timeout: int = 30) -> Op
         logger.warning("openai package not installed. Install with: pip install openai")
         return None
 
-    if not NVIDIA_API_KEY:
-        logger.warning("No NVIDIA_API_KEY configured.")
-        return None
-
     client = OpenAI(
         base_url=NVIDIA_BASE_URL,
         api_key=NVIDIA_API_KEY
@@ -191,6 +184,15 @@ def extract_intent_graph(record: EmailRecord) -> Dict:
         "authority_signals": [],
         "payload_targets": []
     }
+
+    # If no API key configured, skip LLM entirely and use fallback
+    if not NVIDIA_API_KEY:
+        logger.info("No NVIDIA_API_KEY configured, using heuristic fallback")
+        fallback_graph = _fallback_extract(record)
+        if validate_graph(fallback_graph):
+            return fallback_graph
+        logger.warning("All extraction methods failed, returning empty graph")
+        return empty_graph
 
     # Build prompt
     prompt = _build_prompt(record)
