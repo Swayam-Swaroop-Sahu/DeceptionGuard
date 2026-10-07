@@ -1,269 +1,151 @@
-# DeceptionGuard - Email Security Analysis Tool
+# DeceptionGuard - Advanced Email Security Analysis Framework
 
-## Overview
+![Version](https://img.shields.io/badge/version-v1.0.0-blue)
+![Coverage](https://img.shields.io/badge/coverage-80%25%2B-brightgreen)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-DeceptionGuard is a local-first Python tool for analyzing emails and detecting phishing attempts using a combination of machine learning and LLM-based intent analysis. It operates entirely offline (except for optional LLM API calls) and provides a CLI for scanning individual emails or evaluating datasets.
+## Abstract
+DeceptionGuard is a local-first Python tool designed for rigorous, scientific analysis of emails to detect phishing attempts. By combining a fast TF-IDF baseline machine learning model, deterministic deterministic heuristic evidence extraction, and an LLM-based intent analysis graph, DeceptionGuard offers a comprehensive defensive pipeline. Built without hard third-party dependencies in its core execution path, it operates completely offline (utilizing LLM APIs optionally, with reliable local fallback heuristics) and provides robust CLI tools and a modern Web UI for evaluation, batch processing, and dataset testing.
 
-> **Release v1.0.0 (QA Hardened)**: Includes comprehensive unit test coverage (>80%), robust ML evaluation metrics (bootstrapped CIs, ROC-AUC), HTML tag stack fixes, and resilient offline mocking for test pipelines.
+This document serves as both the technical manual and the architectural whitepaper for the system.
 
-## Architecture
+---
 
+## 1. System Architecture
+
+DeceptionGuard operates through a linear, composable pipeline representing the lifecycle of an email analysis:
+
+```mermaid
+graph TD
+    A[Raw Email .eml/.mbox] -->|Ingestion| B(EmailRecord)
+    B --> C{Pipeline Fork}
+    C -->|Baseline ML| D[TF-IDF + Logistic Regression]
+    C -->|Static Evidence| E[Deterministic Detectors]
+    C -->|Intent Analysis| F[LLM Intent Graph]
+    
+    E --> G[Risk Engine]
+    F --> G
+    D -->|Evaluation Reference| H[Metrics Suite]
+    G --> H
+    
+    G --> I((Final Risk Score))
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│ Ingestion   │────▶│ Baseline     │────▶│ Risk        │
-│ (Email)     │     │ Classifier   │     │ Engine      │
-└─────────────┘     └──────────────┘     └─────────────┘
-      │                   │                   │
-      ▼                   ▼                   ▼
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│ Intent      │────▶│ Risk         │────▶│ CLI /       │
-│ Graph       │     │ Scoring      │     │ Evaluation  │
-└─────────────┘     └──────────────┘     └─────────────┘
-```
 
-### Components
+### Components Detailed:
+| Component | Functionality | Underlying Technology |
+|-----------|---------------|-----------------------|
+| **Ingestion** | Parses multipart MIME architectures, handles advanced encoding schemes (Base64, Quoted-Printable), normalizes Bidi/zero-width controls, and tracks nested CSS hidden text visibility vectors. | Python stdlib `email` and `html.parser` |
+| **Baseline Classifier** | Serves as the quantitative benchmark for pipeline improvement. | `scikit-learn` TF-IDF + Logistic Regression |
+| **Evidence Detectors** | Extensible, regex and rule-based detectors emitting specific `Evidence` objects (e.g., `BRAND_TYPOSQUATTING`, `URL_IP_LITERAL`). | Pure Python heuristics |
+| **Intent Graph** | Extracts a structured schema (Urgency, Financial, Actions, Tone) via LLM (e.g., GPT-4 / open-weights) or local heuristic fallbacks if unauthenticated. | `litellm` / `urllib` standard APIs |
+| **Risk Engine** | Computes a final deterministic risk score via bounded, dynamically-configurable additive weights (capped at 100). | TOML-based configurations |
+| **UI & CLI** | Exposes operations (`scan`, `evaluate`, `serve`) to batch analyze or explore graphs. | `argparse`, HTML5/JS |
 
-| Component | Purpose | Technology |
-|-----------|---------|------------|
-| **Ingestion** | Parse .eml and .mbox files | Python stdlib `email` |
-| **Baseline Classifier** | Fast TF-IDF + LogisticRegression | scikit-learn (dev extra only) |
-| **Intent Graph** | Extract structured intent from email | OpenAI-compatible API + Heuristic fallback |
-| **Risk Engine** | Deterministic factor-based scoring | TOML-configurable weights |
-| **Evaluation** | Compare baseline vs full pipeline | stdlib (baseline requires sklearn) |
-| **CLI** | Scan emails & evaluate datasets | argparse (`dg` command) |
+---
 
-## Features
+## 2. Methodology & Datasets
 
-- **Robust Email Parsing**: Supports `.eml` and `.mbox` formats, robust handling of `multipart/alternative`, extracting URLs (anchor, href), attachments, and advanced headers (Authentication-Results, Received chain).
-- **Text Normalization**: Extracts hidden text (CSS-hidden attack signals), normalizes to NFKC, and detects Bidi/zero-width controls.
-- **Deterministic Evidence Layer**: Pure-Python, extensible detectors generating specific `Evidence` objects (e.g. `URL_IP_LITERAL`, `BRAND_TYPOSQUATTING`, `ATTACHMENT_EXECUTABLE`).
-- **Brand Lookalike Detection**: Built-in Damerau-Levenshtein typosquatting detection for high-value targets.
-- **Dual Detection**: ML baseline + Deterministic Evidence + LLM intent analysis using `litellm`
-- **Pydantic Structural Validation**: Extracts verified signals for urgency, tone, financial intent, and trust abuse.
-- **Combined Risk Scoring**: Fully rewrote risk engine to sum dynamically configurable weights from both Evidence and Intent layers, capped at 100.
-- **Offline-First**: Works without API keys using heuristic fallback
-- **Configurable Risk Scoring**: TOML-based factor weights
-- **Robust Dataset Handling**: K-shingle deduplication and temporal/stratified splits.
-- **Comprehensive Evaluation**: `--suite full` runs ablations and calculates ECE, ROC-AUC, PR-AUC, and bootstrap CIs. `--suite adversarial` measures degradation against homoglyphs, zero-width chars, and typos.
-- **Reproducibility**: One-click scripts (`scripts/reproduce.sh` or `Makefile`) to run end-to-end evaluation and fuzzing.
-- **CLI Interface**: `scan`, `evaluate`, and `serve` commands
-- **Professional Web Console**: Local UI (`dg serve`) with interactive visualization of risk factors, batch processing, and dedicated tabs for Evaluation, Adversarial Robustness, and System Overview.
+To ensure rigorous analysis, DeceptionGuard leverages cross-domain public corpora and sophisticated splitting methodologies.
 
-## Quick Start
+### Supported Corpora
+- **SpamAssassin Public Corpus**: Standard ham communications baseline.
+- **Jose Nazario Phishing Corpus**: Historical static evidence phishing patterns (2005-2015).
+- **Enron Email Dataset**: Representing real corporate communications (PII-scrubbed).
+- **DeceptionGuard Synthetic Phishing**: Modern LLM-generated spear-phishing lures.
+
+### Preprocessing and Validation
+1. **Deduplication**: We leverage k-shingle hashing (k=5) paired with MinHash signatures. Any emails sharing a Jaccard similarity >= 0.9 are dropped to prevent train/test data leakage.
+2. **Robust Splitting**: Support for Stratified Random Splits, Cross-corpus generalization tests, and strict Temporal Splitting.
+
+---
+
+## 3. Evaluation Protocol
+
+DeceptionGuard's E2E evaluation (`dg evaluate --suite full`) is designed to measure absolute pipeline efficacy across distinct architectural layers (Ablation Studies).
+
+### Measured Ablations
+1. **Baseline**: Pure ML model predictions.
+2. **Evidence Only**: Deterministic heuristic rules.
+3. **Graph Only**: LLM extracted structural intents.
+4. **Full Pipeline**: The fused Evidence + Intent Graph engine.
+
+### Core Metrics Captured
+- **Classification Stats**: Precision, Recall, F1-Score.
+- **Distribution Stats**: ROC-AUC, PR-AUC, FPR at 95% TPR.
+- **Calibration**: Expected Calibration Error (ECE) via 10-bin binning.
+- **Confidence Intervals**: 95% CIs produced via 1000-iteration Bootstrapping.
+- **Significance Testing**: McNemar tests comparing the full pipeline against the Baseline.
+
+---
+
+## 4. Adversarial Robustness & QA
+
+DeceptionGuard was hardened against adversarial AI-evasion attempts and underwent significant QA testing. 
+
+### Robustness Features
+The test suite inherently mutates payloads (`--suite adversarial`) using:
+- **Homoglyphs**: Cyrillic/Greek lookalike characters mapped dynamically.
+- **Zero-Width Injections**: Invisible character interleaving to break NLP tokenization.
+- **Typosquatting & Permutation**: Brand domain mutations (e.g., `paypaI.com`).
+
+### Quality Assurance (v1.0.0 Release)
+The system was aggressively tested resulting in comprehensive coverage (>80% execution paths) and resolution of critical structural faults (DEF-001 through DEF-005):
+- **Mock Isolation**: Hardened test I/O mocking (avoiding `Path.parent` overrides causing WinError 6).
+- **Offline CLI Execution**: Prevented API execution blocks and slow bootstrapping loops during `pytest` evaluation routines.
+- **Configuration Validation**: Resolved overlap validation logic failures when loading risk engine configuration bounds.
+- **HTML Parser Bleed**: Replaced boolean nested tracking with robust state stacks, preventing hidden-style (e.g. `display: none`) attribute bleeding onto visible text.
+- **Array Consistency**: Hardened the Scikit-Learn dimension constraints for balanced StratifiedSplits.
+
+---
+
+## 5. Setup & Usage
 
 ### Installation
 
 ```bash
-# Clone and enter
+# Clone the repository
 git clone https://github.com/Swayam-Swaroop-Sahu/DeceptionGuard
 cd DeceptionGuard
 
-# Create virtual environment
+# Create isolated environment
 python -m venv venv
+# Windows: venv\Scriptsctivate
 # Linux/Mac: source venv/bin/activate
-# Windows: venv\Scripts\activate
 
-# Install package (with dev dependencies if needed for baseline)
-pip install -e .
-# Or pip install -e ".[dev]" to include scikit-learn for baselines
-```
-
-### Launch the Web Console
-
-```bash
-dg serve
+# Install package (Use [dev] for baseline and testing extensions)
+pip install -e ".[dev]"
 ```
 
 ### Configuration (Optional)
-
-For LLM-powered intent extraction, copy the example configuration file and add your NVIDIA API key:
-
-```bash
-# Copy the example file
-cp .env.example .env
-
-# Edit .env and add your LLM API key
-# DG_LLM_API_KEY=your_key_here
-# DG_LLM_BASE_URL=https://api.openai.com/v1  # optional
-# DG_LLM_MODEL=gpt-4                         # optional
+To leverage the LLM for intent extraction, copy `.env.example` to `.env`:
+```env
+DG_LLM_API_KEY=your_key_here
+DG_LLM_BASE_URL=https://api.openai.com/v1
+DG_LLM_MODEL=gpt-4
 ```
+*(Without API keys, DeceptionGuard automatically utilizes a built-in heuristic intent extractor.)*
 
-The `.env` file is gitignored and will not be committed. The app automatically loads it via `python-dotenv` on startup.
+---
 
-> **Note:** Without an API key, DeceptionGuard runs fully offline using the heuristic fallback for intent extraction.
-
-## Usage
-
-### Scan a Single Email
+## 6. CLI Operations
 
 ```bash
-# Scan an .eml file
+# Scan a single EML file
 dg scan tests/fixtures/phishing_email.eml
 
-# Scan an .mbox file (processes all messages)
+# Scan a full MBOX file
 dg scan tests/fixtures/mixed_mbox.mbox
-```
 
-**Output Example:**
-```
-============================================================
-DeceptionGuard Scan Results
-============================================================
-File: tests/fixtures/phishing_email.eml
-Sender: Security Team <security@payroll-services.xyz>
-Subject: URGENT: Your Account Has Been Compromised!
-Date: Tue, 16 Jan 2024 08:15:00 +0000
-
-Risk Score: 100/100
-Risk Level: HIGH
-
-Factor Breakdown:
-------------------------------------------------------------
-  claimed_identity_mismatch       25/ 25  TRIGGERED
-  urgency_high                    30/ 30  TRIGGERED
-  authority_spoof                 20/ 20  TRIGGERED
-  payload_links                   15/ 15  TRIGGERED
-  action_request                  10/ 10  TRIGGERED
-
-Links Found:
-  https://verify-account-now.malicious-site.com/login?token=abc123
-
-Intent Graph Summary:
-  Claimed Identity: Security Team
-  Requested Action: Verify identity by clicking the provided link
-  Urgency Signals: URGENT, Immediate action required, 24 hours
-  Authority Signals: Security Team, Security Department
-  Payload Targets: https://verify-account-now.malicious-site.com/login?token=abc123
-============================================================
-```
-
-### Evaluate on Dataset
-
-```bash
-# Run evaluation on test dataset
+# Run pipeline evaluations against a generated dataset
 dg evaluate --dataset src/deceptionguard/data/processed/placeholder_test.csv
+
+# Launch the interactive HTML UI
+dg serve
 ```
 
-**Generates:** `src/evaluation/report.md` with detailed comparison.
-
-## Project Structure
-
-```
-DeceptionGuard/
-├── src/                          # Main source code
-│   └── deceptionguard/           # Python package
-│       ├── __init__.py
-│       ├── config.py             # Typed configuration module
-│       ├── ingestion/            # Email parsing
-│       │   ├── __init__.py
-│       │   ├── email_record.py   # EmailRecord dataclass
-│       │   └── parser.py         # EML/MBOX parsers
-│       ├── baseline/             # ML Classifier (optional)
-│       │   ├── __init__.py
-│       │   ├── classifier.py     # BaselineClassifier (TF-IDF + LR)
-│       │   └── train_baseline.py # Training script with synthetic data
-│       ├── intent_graph/         # LLM-based intent extraction
-│       │   ├── __init__.py
-│       │   ├── schema.py         # JSON schema + validation
-│       │   └── extractor.py      # LLM + heuristic fallback
-│       ├── risk_engine/          # Risk scoring
-│       │   ├── __init__.py
-│       │   ├── weights.toml      # Factor weights configuration
-│       │   └── scorer.py         # Deterministic scoring logic
-│       ├── evaluation/           # Evaluation harness
-│       │   ├── __init__.py
-│       │   └── run_evaluation.py # Baseline vs pipeline comparison
-│       ├── cli/                  # Command-line interface
-│       │   ├── __init__.py
-│       │   └── main.py           # scan & evaluate commands
-│       └── data/                 # Synthetic placeholder data
-│           ├── raw/
-│           └── processed/
-├── tests/                        # Unit tests
-├── pyproject.toml                # Package metadata and dependencies
-├── scripts/                      # Helper scripts (pre_push_check)
-│   ├── __init__.py
-│   ├── test_ingestion.py
-│   ├── test_baseline.py
-│   ├── test_intent_graph.py
-│   ├── test_risk_engine.py
-│   ├── test_evaluation.py
-│   ├── test_cli.py
-│   └── fixtures/
-│       ├── __init__.py
-│       ├── legit_email.eml
-│       ├── phishing_email.eml
-│       └── mixed_mbox.mbox
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
-
-## Risk Scoring Factors
-
-The risk engine uses 5 factors (configurable via TOML or in `src/deceptionguard/risk_engine/weights.toml`):
-
-| Factor | Weight | Description |
-|--------|--------|-------------|
-| `claimed_identity_mismatch` | 25 | Sender claims to be security/support/admin |
-| `urgency_high` | 30 | Urgency keywords (urgent, immediate, 24h, deadline) |
-| `authority_spoof` | 20 | Authority impersonation (bank, IRS, Microsoft, etc.) |
-| `payload_links` | 15 | Suspicious links (verify, login, account, secure) |
-| `action_request` | 10 | Explicit action requests (click, verify, update) |
-
-**Score Range:** 0-100
-- **0-10**: MINIMAL
-- **11-39**: LOW
-- **40-69**: MEDIUM
-- **70-100**: HIGH
-
-## Intent Graph Schema
-
-```json
-{
-  "claimed_identity": "string|null",
-  "requested_action": "string|null",
-  "urgency_signals": ["string"],
-  "authority_signals": ["string"],
-  "payload_targets": ["string"]
-}
-```
-
-Extracted via:
-1. **NVIDIA LLM** (gpt-oss-20b) - Primary
-2. **Heuristic Fallback** - Keyword-based, no API needed
-
-## Training the Baseline
-
-```bash
-# Generates synthetic data and trains TF-IDF + LogisticRegression
-python -m deceptionguard.baseline.train_baseline
-```
-
-**Output:**
-```
-Baseline Classifier Results:
-Test F1 Score: 0.7143
-Test Samples: 12
-```
-
-## Running Tests
-
-```bash
-# All tests
-python -m pytest tests/ -v
-
-# Specific module
-python -m pytest tests/test_ingestion.py -v
-python -m pytest tests/test_intent_graph.py -v
-python -m pytest tests/test_cli.py -v
-```
-
-**Current Results:** 31 tests passing
-
-## Configuration Files
-
-### Risk Weights (`src/deceptionguard/risk_engine/weights.toml`)
+### Risk Engine Weights (`weights.toml`)
+Dynamically control scoring attributes:
 ```toml
 [factor_weights]
 claimed_identity_mismatch = 25
@@ -273,58 +155,23 @@ payload_links = 15
 action_request = 10
 ```
 
-### LLM API Configuration
-Configured via `.env` file or environment variables:
-```env
-DG_LLM_API_KEY=your_key_here
-DG_LLM_BASE_URL=https://integrate.api.nvidia.com/v1
-DG_LLM_MODEL=openai/gpt-oss-20b
+---
+
+## 7. Testing Strategy
+
+The project utilizes a strict standard-library testing pyramid (ensuring zero unexpected third-party failures).
+```bash
+# Run entire test suite via Pytest
+python -m pytest tests/ -v
+
+# Generate Branch Coverage Report
+python -m coverage run --branch --source=src -m pytest tests/
+python -m coverage report -m
 ```
 
-## Dependencies
+---
 
-Core pipeline has **zero** third-party dependencies and runs entirely on the Python 3.11+ standard library.
+## 8. License & Extending
+DeceptionGuard is available under the **MIT License**.
 
-Optional `[dev]` dependencies (for baselines and testing):
-```
-pytest>=7.0.0
-ruff>=0.4.0
-scikit-learn>=1.3.0
-matplotlib>=3.7.0
-```
-
-## Known Limitations
-
-| Limitation | Status |
-|------------|--------|
-| LLM requires internet for NVIDIA API | Fallback available |
-| Training data is synthetic | Replace with real data for production |
-| MBOX parsing is basic | Not fully RFC-compliant |
-| Timezone handling limited | Uses email date as-is |
-| Single-threaded evaluation | Could be parallelized |
-
-## Extending the Project
-
-### Add New Risk Factors
-1. Update `src/risk_engine/weights.yaml`
-2. Add detection logic in `src/risk_engine/scorer.py`
-
-### Swap LLM Provider
-Modify `src/intent_graph/extractor.py`:
-- Replace `_call_nvidia_llm()` with your provider
-- Keep `_fallback_extract()` for offline support
-
-### Add Email Format Support
-Extend `src/ingestion/parser.py` with new parsing functions.
-
-## License
-
-MIT License - See LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit pull request
+To add custom risk factors, define new functions in `src/deceptionguard/evidence/detectors.py` and register their resulting penalty configurations in `src/deceptionguard/risk_engine/weights.toml`.
