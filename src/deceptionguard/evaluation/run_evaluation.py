@@ -21,7 +21,6 @@ except ImportError:
 
 from ..ingestion.email_record import EmailRecord
 from ..intent_graph.extractor import extract_intent_graph
-from ..risk_engine.scorer import score_graph
 
 
 def load_dataset(path: str) -> list[dict[str, Any]]:
@@ -145,8 +144,13 @@ def evaluate_full_pipeline(data: list[dict[str, Any]]) -> dict[str, Any]:
         # Extract intent graph (will use heuristic without API key)
         graph = extract_intent_graph(record)
 
-        # Score the graph
-        result = score_graph(graph)
+        # Detect evidence
+        from ..evidence import detect_all
+        evidence_list = detect_all(record)
+
+        # Score the graph and evidence
+        from ..risk_engine.scorer import score_email
+        result = score_email(graph, evidence_list)
 
         # Use risk score as probability (normalized to 0-1)
         prob = result.total_score / 100.0
