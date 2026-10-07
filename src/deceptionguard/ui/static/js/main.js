@@ -11,9 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const riskScore = document.getElementById('riskScore');
     const riskBadge = document.getElementById('riskBadge');
+    const riskDonutFill = document.getElementById('riskDonutFill');
     const factorWaterfall = document.getElementById('factorWaterfall');
     const evidenceTableBody = document.getElementById('evidenceTableBody');
-    const intentGraphJson = document.getElementById('intentGraphJson');
+    const intentGraphGrid = document.getElementById('intentGraphGrid');
     const emailContent = document.getElementById('emailContent');
 
     function defang(text) {
@@ -33,6 +34,20 @@ document.addEventListener('DOMContentLoaded', () => {
         riskScore.textContent = data.score;
         riskBadge.textContent = data.level;
         riskBadge.className = `badge badge-${data.level.toLowerCase()}`;
+        
+        // Update Donut
+        const maxDash = 339.292;
+        const offset = maxDash - (Math.min(data.score, 100) / 100) * maxDash;
+        setTimeout(() => {
+            riskDonutFill.style.strokeDashoffset = offset;
+            
+            let strokeColor = 'var(--color-risk-low)';
+            if (data.level === 'MEDIUM') strokeColor = 'var(--color-risk-medium)';
+            else if (data.level === 'HIGH' || data.level === 'CRITICAL') strokeColor = 'var(--color-risk-high)';
+            else if (data.level === 'MINIMAL') strokeColor = 'var(--color-risk-minimal)';
+            
+            riskDonutFill.style.stroke = strokeColor;
+        }, 50);
 
         // Factor Waterfall
         factorWaterfall.innerHTML = '';
@@ -62,18 +77,60 @@ document.addEventListener('DOMContentLoaded', () => {
             evidenceTableBody.appendChild(tr);
         } else {
             data.evidence.forEach(e => {
+                let icon = 'ℹ️';
+                if (e.severity === 'HIGH') icon = '🚨';
+                else if (e.severity === 'MEDIUM') icon = '⚠️';
+                else if (e.severity === 'CRITICAL') icon = '☠️';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${defang(e.evidence_type)}</td>
-                    <td><span class="badge badge-${e.severity.toLowerCase()}">${e.severity}</span></td>
+                    <td style="font-weight: 500;">${defang(e.evidence_type)}</td>
+                    <td><span class="badge badge-${e.severity.toLowerCase()}">${icon} ${e.severity}</span></td>
                     <td>${defang(e.explanation)}</td>
                 `;
                 evidenceTableBody.appendChild(tr);
             });
         }
 
-        // Intent Graph
-        intentGraphJson.textContent = JSON.stringify(data.graph, null, 2);
+        // Intent Graph Cards
+        intentGraphGrid.innerHTML = '';
+        if (data.graph) {
+            const formatValue = (val) => {
+                if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+                if (Array.isArray(val)) return val.length > 0 ? val.join(', ') : 'None';
+                if (val === null || val === '') return 'Unknown';
+                return val.toString().replace(/_/g, ' ');
+            };
+
+            const importantKeys = ['urgency_level', 'tone', 'requested_actions', 'financial_request', 'suspicious_links_present'];
+            
+            importantKeys.forEach(key => {
+                if (data.graph[key] !== undefined) {
+                    const card = document.createElement('div');
+                    card.className = 'intent-card';
+                    card.innerHTML = `
+                        <div class="intent-card-label">${key.replace(/_/g, ' ')}</div>
+                        <div class="intent-card-value">${formatValue(data.graph[key])}</div>
+                    `;
+                    intentGraphGrid.appendChild(card);
+                }
+            });
+            
+            // Add any remaining keys
+            Object.keys(data.graph).forEach(key => {
+                if (!importantKeys.includes(key) && typeof data.graph[key] !== 'object') {
+                    const card = document.createElement('div');
+                    card.className = 'intent-card';
+                    card.innerHTML = `
+                        <div class="intent-card-label">${key.replace(/_/g, ' ')}</div>
+                        <div class="intent-card-value">${formatValue(data.graph[key])}</div>
+                    `;
+                    intentGraphGrid.appendChild(card);
+                }
+            });
+        } else {
+            intentGraphGrid.innerHTML = '<div class="text-muted">No semantic intent extracted.</div>';
+        }
 
         // Sanitized Email
         emailContent.innerHTML = `<strong>Sender:</strong> ${defang(data.record.sender)}<br>` +
@@ -88,6 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
         analyzeBtn.disabled = true;
         loadingIndicator.classList.remove('hidden');
         errorMsg.classList.add('hidden');
+        
+        // Reset donut state
+        if(riskDonutFill) {
+            riskDonutFill.style.strokeDashoffset = 339.292;
+        }
+
         resultsCard.classList.add('hidden');
         emailViewCard.classList.add('hidden');
 

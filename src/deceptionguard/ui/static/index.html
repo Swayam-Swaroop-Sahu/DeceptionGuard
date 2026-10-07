@@ -66,10 +66,16 @@
                         <span id="riskBadge" class="badge"></span>
                     </div>
 
-                    <div class="risk-gauge">
-                        <div class="text-muted">Total Risk Score</div>
-                        <div id="riskScore" class="risk-score">0</div>
-                        <div class="text-muted">/ 100</div>
+                    <div class="risk-gauge-container">
+                        <svg class="risk-donut" viewBox="0 0 120 120">
+                            <circle class="risk-donut-bg" cx="60" cy="60" r="54"></circle>
+                            <circle id="riskDonutFill" class="risk-donut-fill" cx="60" cy="60" r="54"></circle>
+                        </svg>
+                        <div class="risk-score-display">
+                            <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em;">Total Risk</div>
+                            <div id="riskScore" class="risk-score">0</div>
+                            <div class="risk-score-max">/ 100</div>
+                        </div>
                     </div>
 
                     <h3 class="mt-4">Factor Waterfall</h3>
@@ -92,8 +98,8 @@
                         </tbody>
                     </table>
 
-                    <h3 class="mt-4">Intent Graph Details</h3>
-                    <pre id="intentGraphJson" style="font-family: var(--font-mono); font-size: 0.75rem; background: var(--color-bg-alt); padding: var(--space-2); border-radius: var(--radius-sm); overflow-x: auto;"></pre>
+                    <h3 class="mt-4">Semantic Intent Analysis</h3>
+                    <div id="intentGraphGrid" class="intent-grid mb-2"></div>
                 </div>
             </div>
         </div>
