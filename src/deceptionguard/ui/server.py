@@ -32,7 +32,7 @@ def _set_security_headers(handler: BaseHTTPRequestHandler) -> None:
     # Very strict CSP. Allow styles and scripts only from 'self'. No inline!
     handler.send_header(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none';"
+        "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'none';"
     )
 
 
