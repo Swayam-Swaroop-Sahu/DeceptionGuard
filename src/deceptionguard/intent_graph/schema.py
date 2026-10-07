@@ -1,29 +1,50 @@
-import json
-from typing import Any, Dict
+"""Intent graph schema definition and validation."""
 
-INTENT_GRAPH_SCHEMA = {
+from __future__ import annotations
+
+from typing import Any
+
+INTENT_GRAPH_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "claimed_identity": {"type": ["string", "null"]},
         "requested_action": {"type": ["string", "null"]},
         "urgency_signals": {"type": "array", "items": {"type": "string"}},
         "authority_signals": {"type": "array", "items": {"type": "string"}},
-        "payload_targets": {"type": "array", "items": {"type": "string"}}
+        "payload_targets": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["claimed_identity", "requested_action", "urgency_signals", 
-                 "authority_signals", "payload_targets"]
+    "required": [
+        "claimed_identity",
+        "requested_action",
+        "urgency_signals",
+        "authority_signals",
+        "payload_targets",
+    ],
 }
 
-def validate_graph(graph: Dict[str, Any]) -> bool:
-    """Validate that the graph matches the schema."""
-    required_keys = ["claimed_identity", "requested_action", "urgency_signals", 
-                     "authority_signals", "payload_targets"]
-    
+
+def validate_graph(graph: dict[str, Any]) -> bool:
+    """Validate that the graph matches the expected schema.
+
+    Args:
+        graph: Dict to validate.
+
+    Returns:
+        True if the graph is valid, False otherwise.
+    """
+    required_keys = [
+        "claimed_identity",
+        "requested_action",
+        "urgency_signals",
+        "authority_signals",
+        "payload_targets",
+    ]
+
     # Check all required keys exist
     for key in required_keys:
         if key not in graph:
             return False
-    
+
     # Check types
     if not (graph["claimed_identity"] is None or isinstance(graph["claimed_identity"], str)):
         return False
@@ -41,5 +62,5 @@ def validate_graph(graph: Dict[str, Any]) -> bool:
         return False
     if not all(isinstance(s, str) for s in graph["payload_targets"]):
         return False
-    
+
     return True

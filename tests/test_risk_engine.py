@@ -1,5 +1,6 @@
 import pytest
-from src.risk_engine.scorer import score_graph, FactorContribution, RiskResult
+
+from deceptionguard.risk_engine.scorer import FactorContribution, RiskResult, score_graph
 
 
 def test_score_phishing_graph():
@@ -11,13 +12,13 @@ def test_score_phishing_graph():
         "authority_signals": ["security department", "automated message"],
         "payload_targets": ["https://verify-account-now.malicious-site.com/login"]
     }
-    
+
     result = score_graph(graph)
-    
+
     assert isinstance(result, RiskResult)
     assert result.total_score == 100
     assert len(result.factors) == 5
-    
+
     # All factors should have positive contribution
     for factor in result.factors:
         assert factor.contribution > 0
@@ -33,12 +34,12 @@ def test_score_legitimate_graph():
         "authority_signals": [],
         "payload_targets": ["https://company.com/reports/q4-2023"]
     }
-    
+
     result = score_graph(graph)
-    
+
     assert isinstance(result, RiskResult)
     assert result.total_score == 0
-    
+
     # All factors should have zero contribution
     for factor in result.factors:
         assert factor.contribution == 0
@@ -53,9 +54,9 @@ def test_score_empty_graph():
         "authority_signals": [],
         "payload_targets": []
     }
-    
+
     result = score_graph(graph)
-    
+
     assert isinstance(result, RiskResult)
     assert result.total_score == 0
 
@@ -69,13 +70,13 @@ def test_score_partial_graph():
         "authority_signals": [],
         "payload_targets": []
     }
-    
+
     result = score_graph(graph)
-    
+
     assert isinstance(result, RiskResult)
     # Should have identity mismatch (25) + urgency (30) = 55
     assert result.total_score == 55
-    
+
     # Check specific factors
     factor_dict = {f.name: f.contribution for f in result.factors}
     assert factor_dict["claimed_identity_mismatch"] == 25

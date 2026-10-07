@@ -24,11 +24,11 @@ DeceptionGuard is a local-first Python tool for analyzing emails and detecting p
 | Component | Purpose | Technology |
 |-----------|---------|------------|
 | **Ingestion** | Parse .eml and .mbox files | Python stdlib `email` |
-| **Baseline Classifier** | Fast TF-IDF + LogisticRegression | scikit-learn |
-| **Intent Graph** | Extract structured intent from email | NVIDIA LLM (gpt-oss-20b) + Heuristic fallback |
-| **Risk Engine** | Deterministic factor-based scoring | YAML-configurable weights |
-| **Evaluation** | Compare baseline vs full pipeline | scikit-learn metrics |
-| **CLI** | Scan emails & evaluate datasets | argparse |
+| **Baseline Classifier** | Fast TF-IDF + LogisticRegression | scikit-learn (dev extra only) |
+| **Intent Graph** | Extract structured intent from email | OpenAI-compatible API + Heuristic fallback |
+| **Risk Engine** | Deterministic factor-based scoring | TOML-configurable weights |
+| **Evaluation** | Compare baseline vs full pipeline | stdlib (baseline requires sklearn) |
+| **CLI** | Scan emails & evaluate datasets | argparse (`dg` command) |
 
 ## Features
 
@@ -50,11 +50,12 @@ cd DeceptionGuard
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
+# Linux/Mac: source venv/bin/activate
+# Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install package (with dev dependencies if needed for baseline)
+pip install -e .
+# Or pip install -e ".[dev]" to include scikit-learn for baselines
 ```
 
 ### Configuration (Optional)
@@ -65,10 +66,10 @@ For LLM-powered intent extraction, copy the example configuration file and add y
 # Copy the example file
 cp .env.example .env
 
-# Edit .env and add your NVIDIA API key (get one from https://build.nvidia.com/)
-# NVIDIA_API_KEY=your_key_here
-# NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1  # optional, defaults to this
-# NVIDIA_MODEL=openai/gpt-oss-20b                     # optional, defaults to this
+# Edit .env and add your LLM API key
+# DG_LLM_API_KEY=your_key_here
+# DG_LLM_BASE_URL=https://api.openai.com/v1  # optional
+# DG_LLM_MODEL=gpt-4                         # optional
 ```
 
 The `.env` file is gitignored and will not be committed. The app automatically loads it via `python-dotenv` on startup.
@@ -81,10 +82,10 @@ The `.env` file is gitignored and will not be committed. The app automatically l
 
 ```bash
 # Scan an .eml file
-python -m src.cli.main scan tests/fixtures/phishing_email.eml
+dg scan tests/fixtures/phishing_email.eml
 
 # Scan an .mbox file (processes all messages)
-python -m src.cli.main scan tests/fixtures/mixed_mbox.mbox
+dg scan tests/fixtures/mixed_mbox.mbox
 ```
 
 **Output Example:**
@@ -124,7 +125,7 @@ Intent Graph Summary:
 
 ```bash
 # Run evaluation on test dataset
-python -m src.cli.main evaluate --dataset src/data/processed/placeholder_test.csv
+dg evaluate --dataset src/deceptionguard/data/processed/placeholder_test.csv
 ```
 
 **Generates:** `src/evaluation/report.md` with detailed comparison.
@@ -134,35 +135,37 @@ python -m src.cli.main evaluate --dataset src/data/processed/placeholder_test.cs
 ```
 DeceptionGuard/
 ├── src/                          # Main source code
-│   ├── __init__.py
-│   ├── ingestion/                # Email parsing
-│   │   ├── __init__.py
-│   │   ├── email_record.py       # EmailRecord dataclass
-│   │   └── parser.py             # EML/MBOX parsers
-│   ├── baseline/                 # ML Classifier
-│   │   ├── __init__.py
-│   │   ├── classifier.py         # BaselineClassifier (TF-IDF + LR)
-│   │   └── train_baseline.py     # Training script with synthetic data
-│   ├── intent_graph/             # LLM-based intent extraction
-│   │   ├── __init__.py
-│   │   ├── schema.py             # JSON schema + validation
-│   │   └── extractor.py          # NVIDIA LLM + heuristic fallback
-│   ├── risk_engine/              # Risk scoring
-│   │   ├── __init__.py
-│   │   ├── weights.yaml          # Factor weights configuration
-│   │   └── scorer.py             # Deterministic scoring logic
-│   ├── evaluation/               # Evaluation harness
-│   │   ├── __init__.py
-│   │   └── run_evaluation.py     # Baseline vs pipeline comparison
-│   ├── cli/                      # Command-line interface
-│   │   ├── __init__.py
-│   │   └── main.py               # scan & evaluate commands
-│   └── data/
-│       ├── raw/                  # Raw emails (gitignored)
-│       └── processed/            # Processed datasets
-│           ├── placeholder_train.csv
-│           └── placeholder_test.csv
+│   └── deceptionguard/           # Python package
+│       ├── __init__.py
+│       ├── config.py             # Typed configuration module
+│       ├── ingestion/            # Email parsing
+│       │   ├── __init__.py
+│       │   ├── email_record.py   # EmailRecord dataclass
+│       │   └── parser.py         # EML/MBOX parsers
+│       ├── baseline/             # ML Classifier (optional)
+│       │   ├── __init__.py
+│       │   ├── classifier.py     # BaselineClassifier (TF-IDF + LR)
+│       │   └── train_baseline.py # Training script with synthetic data
+│       ├── intent_graph/         # LLM-based intent extraction
+│       │   ├── __init__.py
+│       │   ├── schema.py         # JSON schema + validation
+│       │   └── extractor.py      # LLM + heuristic fallback
+│       ├── risk_engine/          # Risk scoring
+│       │   ├── __init__.py
+│       │   ├── weights.toml      # Factor weights configuration
+│       │   └── scorer.py         # Deterministic scoring logic
+│       ├── evaluation/           # Evaluation harness
+│       │   ├── __init__.py
+│       │   └── run_evaluation.py # Baseline vs pipeline comparison
+│       ├── cli/                  # Command-line interface
+│       │   ├── __init__.py
+│       │   └── main.py           # scan & evaluate commands
+│       └── data/                 # Synthetic placeholder data
+│           ├── raw/
+│           └── processed/
 ├── tests/                        # Unit tests
+├── pyproject.toml                # Package metadata and dependencies
+├── scripts/                      # Helper scripts (pre_push_check)
 │   ├── __init__.py
 │   ├── test_ingestion.py
 │   ├── test_baseline.py
@@ -182,7 +185,7 @@ DeceptionGuard/
 
 ## Risk Scoring Factors
 
-The risk engine uses 5 factors (configurable in `src/risk_engine/weights.yaml`):
+The risk engine uses 5 factors (configurable via TOML or in `src/deceptionguard/risk_engine/weights.toml`):
 
 | Factor | Weight | Description |
 |--------|--------|-------------|
@@ -218,7 +221,7 @@ Extracted via:
 
 ```bash
 # Generates synthetic data and trains TF-IDF + LogisticRegression
-python -m src.baseline.train_baseline
+python -m deceptionguard.baseline.train_baseline
 ```
 
 **Output:**
@@ -244,32 +247,34 @@ python -m pytest tests/test_cli.py -v
 
 ## Configuration Files
 
-### Risk Weights (`src/risk_engine/weights.yaml`)
-```yaml
-factor_weights:
-  claimed_identity_mismatch: 25
-  urgency_high: 30
-  authority_spoof: 20
-  payload_links: 15
-  action_request: 10
+### Risk Weights (`src/deceptionguard/risk_engine/weights.toml`)
+```toml
+[factor_weights]
+claimed_identity_mismatch = 25
+urgency_high = 30
+authority_spoof = 20
+payload_links = 15
+action_request = 10
 ```
 
-### NVIDIA API (`src/intent_graph/extractor.py`)
-```python
-NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "default-key")
-NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-NVIDIA_MODEL = "openai/gpt-oss-20b"
+### LLM API Configuration
+Configured via `.env` file or environment variables:
+```env
+DG_LLM_API_KEY=your_key_here
+DG_LLM_BASE_URL=https://integrate.api.nvidia.com/v1
+DG_LLM_MODEL=openai/gpt-oss-20b
 ```
 
 ## Dependencies
 
+Core pipeline has **zero** third-party dependencies and runs entirely on the Python 3.11+ standard library.
+
+Optional `[dev]` dependencies (for baselines and testing):
 ```
-scikit-learn>=1.3.0
-numpy>=1.24.0
-pandas>=2.0.0
-pyyaml>=6.0
 pytest>=7.0.0
-openai>=1.0.0
+ruff>=0.4.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
 ```
 
 ## Known Limitations

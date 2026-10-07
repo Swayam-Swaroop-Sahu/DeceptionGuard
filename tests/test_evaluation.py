@@ -1,45 +1,52 @@
-import pytest
 from pathlib import Path
-import pandas as pd
-from src.evaluation.run_evaluation import (
-    load_dataset, evaluate_baseline, evaluate_full_pipeline, 
-    evaluate_by_subtype, generate_report
+
+import pytest
+
+from deceptionguard.evaluation.run_evaluation import (
+    evaluate_baseline,
+    evaluate_by_subtype,
+    evaluate_full_pipeline,
+    generate_report,
+    load_dataset,
 )
 
 
 def test_load_dataset():
     """Test loading a dataset."""
+    import csv
+
     # Create a temporary CSV for testing
-    test_df = pd.DataFrame({
-        "text": ["test email 1", "test email 2"],
-        "label": [0, 1],
-        "subtype": ["legit", "phishing"]
-    })
+    test_data = [
+        {"text": "test email 1", "label": 0, "subtype": "legit"},
+        {"text": "test email 2", "label": 1, "subtype": "phishing"}
+    ]
     test_path = Path(__file__).parent / "test_temp.csv"
-    test_df.to_csv(test_path, index=False)
-    
+    with open(test_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["text", "label", "subtype"])
+        writer.writeheader()
+        writer.writerows(test_data)
+
     loaded = load_dataset(str(test_path))
     assert len(loaded) == 2
-    assert list(loaded.columns) == ["text", "label", "subtype"]
-    
+    assert "text" in loaded[0]
+    assert "label" in loaded[0]
+    assert "subtype" in loaded[0]
+
     # Cleanup
     test_path.unlink()
 
 
 def test_evaluate_baseline():
     """Test baseline evaluation."""
-    test_df = pd.DataFrame({
-        "text": [
-            "Dear team, please review the quarterly report.",
-            "URGENT: Your account compromised! Click here!",
-            "Meeting reminder for tomorrow at 10 AM.",
-            "Verify your banking info now or lose access.",
-        ],
-        "label": [0, 1, 0, 1]
-    })
-    
-    metrics = evaluate_baseline(test_df)
-    
+    test_data = [
+        {"text": "Dear team, please review the quarterly report.", "label": 0},
+        {"text": "URGENT: Your account compromised! Click here!", "label": 1},
+        {"text": "Meeting reminder for tomorrow at 10 AM.", "label": 0},
+        {"text": "Verify your banking info now or lose access.", "label": 1},
+    ]
+
+    metrics = evaluate_baseline(test_data)
+
     assert "precision" in metrics
     assert "recall" in metrics
     assert "f1" in metrics
@@ -51,16 +58,13 @@ def test_evaluate_baseline():
 
 def test_evaluate_full_pipeline():
     """Test full pipeline evaluation."""
-    test_df = pd.DataFrame({
-        "text": [
-            "Dear team, please review the quarterly report.",
-            "URGENT: Your account compromised! Click here!",
-        ],
-        "label": [0, 1]
-    })
-    
-    metrics = evaluate_full_pipeline(test_df)
-    
+    test_data = [
+        {"text": "Dear team, please review the quarterly report.", "label": 0},
+        {"text": "URGENT: Your account compromised! Click here!", "label": 1},
+    ]
+
+    metrics = evaluate_full_pipeline(test_data)
+
     assert "precision" in metrics
     assert "recall" in metrics
     assert "f1" in metrics
@@ -72,15 +76,18 @@ def test_evaluate_full_pipeline():
 
 def test_evaluate_by_subtype():
     """Test subtype evaluation."""
-    test_df = pd.DataFrame({
-        "text": ["test1", "test2", "test3", "test4", "test5", "test6"],
-        "label": [0, 1, 0, 1, 0, 1],
-        "subtype": ["legit", "legit", "phishing", "phishing", "phishing", "phishing"]
-    })
+    test_data = [
+        {"text": "test1", "label": 0, "subtype": "legit"},
+        {"text": "test2", "label": 1, "subtype": "legit"},
+        {"text": "test3", "label": 0, "subtype": "phishing"},
+        {"text": "test4", "label": 1, "subtype": "phishing"},
+        {"text": "test5", "label": 0, "subtype": "phishing"},
+        {"text": "test6", "label": 1, "subtype": "phishing"}
+    ]
     pred_labels = [0, 1, 0, 1, 0, 1]  # Perfect predictions
-    
-    results = evaluate_by_subtype(test_df, pred_labels)
-    
+
+    results = evaluate_by_subtype(test_data, pred_labels)
+
     assert "legit" in results
     assert "phishing" in results
     assert results["legit"]["f1"] == 1.0
@@ -89,14 +96,14 @@ def test_evaluate_by_subtype():
 
 def test_evaluate_by_subtype_no_subtype_column():
     """Test subtype evaluation without subtype column."""
-    test_df = pd.DataFrame({
-        "text": ["test1", "test2"],
-        "label": [0, 1]
-    })
+    test_data = [
+        {"text": "test1", "label": 0},
+        {"text": "test2", "label": 1}
+    ]
     pred_labels = [0, 1]
-    
-    results = evaluate_by_subtype(test_df, pred_labels)
-    
+
+    results = evaluate_by_subtype(test_data, pred_labels)
+
     assert results == {}
 
 
@@ -108,9 +115,9 @@ def test_generate_report():
         "phishing": {"precision": 0.9, "recall": 0.85, "f1": 0.87, "support": 10},
         "legit": {"precision": 0.8, "recall": 0.75, "f1": 0.77, "support": 10}
     }
-    
+
     report = generate_report(baseline, system, subtypes)
-    
+
     assert "# DeceptionGuard Evaluation Report" in report
     assert "0.7500" in report  # baseline F1
     assert "0.8200" in report  # system F1
