@@ -155,12 +155,24 @@ Examples:
     )
     eval_parser.add_argument("--dataset", required=True, help="Path to labeled dataset CSV")
 
+    # Serve subcommand
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Start the DeceptionGuard Console Web UI",
+        description="Launch the local web UI for interactive analysis"
+    )
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
+    serve_parser.add_argument("--port", type=int, default=8765, help="Port to bind to (default: 8765)")
+
     args = parser.parse_args()
 
     if args.command == "scan":
         scan_email(args.file)
     elif args.command == "evaluate":
         evaluate_dataset(args.dataset)
+    elif args.command == "serve":
+        from deceptionguard.ui.server import run_server
+        run_server(host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

@@ -42,7 +42,8 @@ DeceptionGuard is a local-first Python tool for analyzing emails and detecting p
 - **Offline-First**: Works without API keys using heuristic fallback
 - **Configurable Risk Scoring**: TOML-based factor weights
 - **Comprehensive Evaluation**: Baseline vs pipeline comparison with subtype breakdown, automated metric tracking.
-- **CLI Interface**: `scan` and `evaluate` commands
+- **CLI Interface**: `scan`, `evaluate`, and `serve` commands
+- **Professional Web Console**: Local UI (`dg serve`) with interactive visualization of risk factors, evidence, and sanitized intent graph.
 
 ## Quick Start
 
@@ -61,6 +62,12 @@ python -m venv venv
 # Install package (with dev dependencies if needed for baseline)
 pip install -e .
 # Or pip install -e ".[dev]" to include scikit-learn for baselines
+```
+
+### Launch the Web Console
+
+```bash
+dg serve
 ```
 
 ### Configuration (Optional)

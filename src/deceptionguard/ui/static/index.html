@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeceptionGuard Console</title>
+    <!-- CSS tokens and components -->
+    <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <div class="navbar-brand">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                </svg>
+                DeceptionGuard Console
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div class="grid-12">
+            <!-- Left Column: Input -->
+            <div class="col-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Analyze Email</h2>
+                    </div>
+                    <p class="text-muted">Paste raw email (.eml) content below to run the pipeline.</p>
+                    <textarea id="emailInput" class="form-control mb-2" placeholder="Return-Path: <attacker@scam.com>&#10;From: Support <support@paypal.com>&#10;To: victim@example.com&#10;Subject: URGENT: Account Locked&#10;..."></textarea>
+                    
+                    <div style="display: flex; gap: var(--space-2); align-items: center;">
+                        <button id="analyzeBtn" class="btn">Run Analysis</button>
+                        <div id="loadingIndicator" class="loader hidden"></div>
+                    </div>
+                    <div id="errorMsg" class="mt-2 hidden" style="color: var(--color-risk-high); font-weight: bold;"></div>
+                </div>
+
+                <!-- Sanitized Email View -->
+                <div id="emailViewCard" class="card hidden">
+                    <div class="card-header">
+                        <h2 class="card-title">Sanitized Email Content</h2>
+                    </div>
+                    <p class="text-muted">HTML has been stripped. URLs are defanged.</p>
+                    <div id="emailContent"></div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="col-6">
+                <div id="resultsCard" class="card hidden">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="card-title">Analysis Results</h2>
+                        <span id="riskBadge" class="badge"></span>
+                    </div>
+
+                    <div class="risk-gauge">
+                        <div class="text-muted">Total Risk Score</div>
+                        <div id="riskScore" class="risk-score">0</div>
+                        <div class="text-muted">/ 100</div>
+                    </div>
+
+                    <h3 class="mt-4">Factor Waterfall</h3>
+                    <div id="factorWaterfall" class="mb-2"></div>
+                    <div style="display: flex; gap: var(--space-2); font-size: 0.75rem;" class="text-muted mb-2">
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background-color: var(--color-risk-medium);"></span> Intent Graph</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="display:inline-block; width:10px; height:10px; background-color: var(--color-risk-high);"></span> Evidence Layer</span>
+                    </div>
+
+                    <h3 class="mt-4">Evidence Found</h3>
+                    <table class="table mb-2">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Severity</th>
+                                <th>Explanation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evidenceTableBody">
+                        </tbody>
+                    </table>
+
+                    <h3 class="mt-4">Intent Graph Details</h3>
+                    <pre id="intentGraphJson" style="font-family: var(--font-mono); font-size: 0.75rem; background: var(--color-bg-alt); padding: var(--space-2); border-radius: var(--radius-sm); overflow-x: auto;"></pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="/js/main.js"></script>
+</body>
+</html>
