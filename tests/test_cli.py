@@ -53,7 +53,7 @@ def test_cli_evaluate_dataset(capsys):
     result = run_cli_with_capsys(capsys, "evaluate", "--dataset", "src/deceptionguard/data/processed/placeholder_test.csv")
 
     assert result.returncode == 0
-    assert "Baseline F1" in result.stdout or "Evaluation Report" in result.stdout
+    assert "baseline: F1=" in result.stdout
 
 
 def test_cli_evaluate_nonexistent_dataset(capsys):

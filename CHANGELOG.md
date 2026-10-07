@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-10-07
+### Added
+- Phase 6: Datasets and Evaluation Protocol.
+- `src/deceptionguard/data/loaders.py` for standardizing dataset loads (Enron, SpamAssassin, Nazario).
+- `src/deceptionguard/data/split.py` for k-shingle deduplication and splitting strategies.
+- `src/deceptionguard/evaluation/metrics.py` for computing ECE, bootstrap CIs, PR-AUC, and McNemar test.
+- `--suite full` for `dg evaluate` to run all ablations and output JSON(L) to `results/`.
+- `docs/DATASETS.md` documenting datasets and evaluation setup.
+
 ## [0.6.0] - 2026-10-07
 ### Added
 - Phase U1: Web UI Foundation & Analyze Page.

@@ -90,7 +90,6 @@ def evaluate_dataset(dataset_path: str) -> None:
     """Run evaluation on a dataset and generate report."""
     import sys
 
-    from deceptionguard.evaluation.run_evaluation import main as eval_main
 
     path = Path(dataset_path)
     if not path.is_absolute():
@@ -101,26 +100,12 @@ def evaluate_dataset(dataset_path: str) -> None:
         print(f"Error: Dataset not found: {dataset_path}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Running evaluation on {path}...")
-
-    # We use unittest.mock to mock sys.argv if eval_main parses args,
-    # but actually run_evaluation.main() doesn't take args and hardcodes the path,
-    # wait... in run_evaluation.py it hardcodes the path to test_path!
-    # I should modify run_evaluation.main() to accept a dataset path!
-
-    # Let's run it for now, it uses its hardcoded placeholder_test.csv
+    from deceptionguard.evaluation.run_evaluation import run_evaluation_suite
     try:
-        eval_main()
+        run_evaluation_suite(dataset_path)
     except Exception as e:
         print(f"Evaluation failed: {e}", file=sys.stderr)
         sys.exit(1)
-
-    # Check for report
-    report_path = Path(__file__).parent.parent / "evaluation" / "report.md"
-    if report_path.exists():
-        print(f"\nReport generated: {report_path}")
-    else:
-        print("Warning: Report file not found", file=sys.stderr)
 
 
 def main() -> None:
@@ -154,6 +139,7 @@ Examples:
         description="Evaluate DeceptionGuard system on a labeled dataset"
     )
     eval_parser.add_argument("--dataset", required=True, help="Path to labeled dataset CSV")
+    eval_parser.add_argument("--suite", choices=["standard", "full"], default="standard", help="Evaluation suite to run")
 
     # Serve subcommand
     serve_parser = subparsers.add_parser(
@@ -169,7 +155,11 @@ Examples:
     if args.command == "scan":
         scan_email(args.file)
     elif args.command == "evaluate":
-        evaluate_dataset(args.dataset)
+        if args.suite == "full":
+            from deceptionguard.evaluation.run_evaluation import run_evaluation_suite
+            run_evaluation_suite(args.dataset)
+        else:
+            evaluate_dataset(args.dataset)
     elif args.command == "serve":
         from deceptionguard.ui.server import run_server
         run_server(host=args.host, port=args.port)
