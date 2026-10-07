@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-07
+### Added
+- Phase 2: Deterministic Evidence Layer.
+- `Evidence` schema defining specific, serializable risks (type, severity, explanation, span).
+- Sender/Domain mismatch detectors (Display Name spoofing, Reply-To discrepancies).
+- Comprehensive URL detectors (IP-literals, shorteners, punycode/IDN, lookalikes).
+- Brand lookalike detection using Damerau-Levenshtein and a built-in JSON target list.
+- Attachment and Authentication risk detectors.
+
 ## [0.1.0] - 2026-10-07
 ### Added
 - Robust ingestion pipeline using Python's `email` and `mailbox` standard libraries.
