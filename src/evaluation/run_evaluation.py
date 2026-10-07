@@ -2,10 +2,10 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, Tuple
 from sklearn.metrics import precision_recall_fscore_support
-from deceptionguard.baseline.classifier import BaselineClassifier
-from deceptionguard.ingestion.parser import parse_eml
-from deceptionguard.intent_graph.extractor import extract_intent_graph
-from deceptionguard.risk_engine.scorer import score_graph
+from src.baseline.classifier import BaselineClassifier
+from src.ingestion.parser import parse_eml
+from src.intent_graph.extractor import extract_intent_graph
+from src.risk_engine.scorer import score_graph
 
 
 def load_dataset(path: str) -> pd.DataFrame:
@@ -63,7 +63,7 @@ def evaluate_full_pipeline(df: pd.DataFrame) -> Dict:
     
     for _, row in df.iterrows():
         # Create a minimal EmailRecord from text
-        from deceptionguard.ingestion.email_record import EmailRecord
+        from src.ingestion.email_record import EmailRecord
         record = EmailRecord(
             sender="unknown@example.com",
             reply_to=None,
