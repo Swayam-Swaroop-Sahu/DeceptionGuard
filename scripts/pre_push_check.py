@@ -68,7 +68,7 @@ def check_secrets():
         if not path.is_file():
             continue
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 content = f.read()
                 for pattern in SECRET_PATTERNS:
                     if re.search(pattern, content):
@@ -89,7 +89,7 @@ def check_data_leakage():
         path = Path(file_path)
         if not path.is_file():
             continue
-        
+
         # Check size
         if path.stat().st_size > MAX_FILE_SIZE_BYTES:
             print(f"[FAIL] File {file_path} is larger than {MAX_FILE_SIZE_MB}MB!")
@@ -100,7 +100,7 @@ def check_data_leakage():
             if "tests/fixtures" not in str(path).replace(os.sep, "/"):
                 print(f"[FAIL] Real email file found outside fixtures: {file_path}")
                 return False
-                
+
         # Check data dirs
         if any(bad_dir in file_path for bad_dir in ["data/raw", "datasets/"]):
             print(f"[FAIL] File tracked in restricted directory: {file_path}")
@@ -114,7 +114,7 @@ def check_docs_updated():
     # Get current branch
     branch_cmd = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
     branch = branch_cmd.stdout.strip()
-    
+
     # Get changed files against main
     # If we are on main, check last commit
     if branch == "main":
@@ -147,7 +147,7 @@ def main():
         check_data_leakage(),
         check_docs_updated()
     ]
-    
+
     if all(checks):
         print("[OK] All pre-push checks passed!")
         sys.exit(0)

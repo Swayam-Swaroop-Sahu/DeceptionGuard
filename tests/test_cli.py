@@ -8,14 +8,14 @@ from deceptionguard.cli.main import main
 
 def run_cli_with_capsys(capsys, *args):
     """Run CLI command and return stdout/stderr."""
-    with patch.object(sys, "argv", ["dg"] + list(args)):
-        with patch("deceptionguard.intent_graph.extractor.extract_intent_graph", return_value={"urgency_pressure": True, "financial_request": False, "action_requested": None, "deception_tone": None, "trust_abuse": None}):
-            with patch("deceptionguard.evaluation.metrics.bootstrap_ci", return_value={}):
-                try:
-                    main()
-                    returncode = 0
-                except SystemExit as e:
-                    returncode = e.code if e.code is not None else 0
+    with patch.object(sys, "argv", ["dg"] + list(args)), \
+         patch("deceptionguard.intent_graph.extractor.extract_intent_graph", return_value={"urgency_pressure": True, "financial_request": False, "action_requested": None, "deception_tone": None, "trust_abuse": None}), \
+         patch("deceptionguard.evaluation.metrics.bootstrap_ci", return_value={}):
+        try:
+            main()
+            returncode = 0
+        except SystemExit as e:
+            returncode = e.code if e.code is not None else 0
 
     captured = capsys.readouterr()
     return type("Result", (), {"returncode": returncode, "stdout": captured.out, "stderr": captured.err})

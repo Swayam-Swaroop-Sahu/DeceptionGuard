@@ -21,7 +21,7 @@ class EmailHTMLParser(HTMLParser):
         for attr, val in attrs:
             if attr == "style" and val:
                 val = val.lower().replace(" ", "")
-                if ("display:none" in val or "visibility:hidden" in val or 
+                if ("display:none" in val or "visibility:hidden" in val or
                     "font-size:0" in val or "opacity:0" in val or
                     "width:0" in val or "height:0" in val or
                     "left:-99" in val or "top:-99" in val):
@@ -40,7 +40,7 @@ class EmailHTMLParser(HTMLParser):
                     href = val
                     break
             self.a_stack.append((href, []))
-            
+
     def handle_startendtag(self, tag, attrs):
         pass # void element, no stack push/pop
 

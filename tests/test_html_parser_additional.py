@@ -1,5 +1,6 @@
 from deceptionguard.ingestion.html_parser import parse_html_content
 
+
 def test_parse_html_hidden_elements():
     html = """
     <html>
@@ -22,7 +23,7 @@ def test_parse_html_hidden_elements():
     assert "zero size" in hidden
     assert "offscreen" in hidden
     # Wait, class-based might not be caught by inline parser without CSS, but test it anyway
-    
+
 def test_parse_html_obfuscation():
     html = """
     <p>vis<!-- comment -->ible</p>

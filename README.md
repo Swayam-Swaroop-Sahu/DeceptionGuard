@@ -4,6 +4,8 @@
 
 DeceptionGuard is a local-first Python tool for analyzing emails and detecting phishing attempts using a combination of machine learning and LLM-based intent analysis. It operates entirely offline (except for optional LLM API calls) and provides a CLI for scanning individual emails or evaluating datasets.
 
+> **Release v1.0.0 (QA Hardened)**: Includes comprehensive unit test coverage (>80%), robust ML evaluation metrics (bootstrapped CIs, ROC-AUC), HTML tag stack fixes, and resilient offline mocking for test pipelines.
+
 ## Architecture
 
 ```

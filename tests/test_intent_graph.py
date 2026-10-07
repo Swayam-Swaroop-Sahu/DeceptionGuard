@@ -84,8 +84,8 @@ def test_fallback_extract_legitimate():
     assert graph["deception_tone"] == "curiosity" # "attached"
     assert validate_graph(graph) is True
 
-import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
 
 def test_extract_intent_graph_llm():
     """Test extract_intent_graph uses urllib.request."""
@@ -102,9 +102,9 @@ def test_extract_intent_graph_llm():
 
     mock_resp = MagicMock()
     mock_resp.read.return_value = b'{"choices": [{"message": {"content": "{\\"urgency_pressure\\": true, \\"financial_request\\": false, \\"action_requested\\": \\"click\\", \\"deception_tone\\": \\"neutral\\", \\"trust_abuse\\": null}"}}]}'
-    
+
     config = LLMConfig(api_key="sk-test", model="gpt-4o-mini")
-    
+
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_urlopen.return_value.__enter__.return_value = mock_resp
         graph = extract_intent_graph(record, llm_config=config)
@@ -127,7 +127,7 @@ def test_extract_intent_graph_llm_failure():
     )
 
     config = LLMConfig(api_key="sk-test", model="gpt-4o-mini")
-    
+
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_urlopen.side_effect = Exception("API Error")
         graph = extract_intent_graph(record, llm_config=config)

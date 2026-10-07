@@ -2,6 +2,7 @@ import ast
 import os
 from pathlib import Path
 
+
 def get_stdlib_modules():
     import sys
     return set(sys.stdlib_module_names)
@@ -9,12 +10,12 @@ def get_stdlib_modules():
 def check_imports(src_dir):
     stdlib = get_stdlib_modules()
     violations = []
-    
+
     for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith('.py'):
                 path = Path(root) / file
-                with open(path, 'r', encoding='utf-8') as f:
+                with open(path, encoding='utf-8') as f:
                     try:
                         tree = ast.parse(f.read(), filename=str(path))
                         for node in ast.walk(tree):
