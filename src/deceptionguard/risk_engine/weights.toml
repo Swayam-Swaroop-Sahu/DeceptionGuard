@@ -1,6 +1,23 @@
-[factor_weights]
-urgency_pressure = 30
-financial_request = 25
-trust_abuse = 20
+[intent_weights]
+urgency_pressure = 20
+financial_request = 15
+trust_abuse = 15
 action_requested = 10
-deception_tone_high_risk = 15
+deception_tone_high_risk = 10
+
+[evidence_weights]
+DISPLAY_NAME_BRAND_MISMATCH = 40
+DISPLAY_NAME_DOMAIN_MISMATCH = 30
+REPLY_TO_MISMATCH = 30
+URL_IP_LITERAL = 35
+URL_SHORTENER = 15
+URL_ANCHOR_MISMATCH = 25
+BRAND_TYPOSQUATTING = 40
+AUTH_SPF_FAILURE = 10
+AUTH_DMARC_FAILURE = 20
+AUTH_DKIM_FAILURE = 10
+ATTACHMENT_EXECUTABLE = 50
+ATTACHMENT_DOUBLE_EXTENSION = 40
+ATTACHMENT_EXTENSION_MISMATCH = 20
+TEXT_OBFUSCATION = 15
+HTML_HIDDEN_TEXT = 15

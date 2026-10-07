@@ -20,9 +20,10 @@ def _load_env() -> None:
 
 def scan_email(file_path: str) -> None:
     """Scan a single email file and print score + top factors."""
+    from deceptionguard.evidence import detect_all
     from deceptionguard.ingestion.parser import parse_eml
     from deceptionguard.intent_graph.extractor import extract_intent_graph
-    from deceptionguard.risk_engine.scorer import score_graph
+    from deceptionguard.risk_engine.scorer import score_email
 
     path = Path(file_path)
     if not path.exists():
@@ -35,8 +36,11 @@ def scan_email(file_path: str) -> None:
     # Extract intent graph
     graph = extract_intent_graph(record)
 
+    # Detect evidence
+    evidence_list = detect_all(record)
+
     # Score
-    result = score_graph(graph)
+    result = score_email(graph, evidence_list)
 
     # Print results
     print(f"\n{'=' * 60}")
@@ -59,11 +63,12 @@ def scan_email(file_path: str) -> None:
 
     print(f"Risk Level: {risk_level}")
     print("\nFactor Breakdown:")
-    print(f"{'-' * 60}")
-
+    print(f"{'-' * 80}")
+    print(f"  {'Factor Name':<30} | {'Category':<10} | {'Score'}")
+    print(f"{'-' * 80}")
     for factor in result.factors:
         status = "TRIGGERED" if factor.contribution > 0 else "not triggered"
-        print(f"  {factor.name:30s} {factor.contribution:3d}/{factor.weight:3d}  {status}")
+        print(f"  {factor.name:30s} | {factor.category:10s} | {factor.contribution:3d}/{factor.weight:3d}  {status}")
 
     # Show links found
     if record.links:
