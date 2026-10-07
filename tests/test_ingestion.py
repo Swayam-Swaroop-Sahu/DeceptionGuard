@@ -18,7 +18,7 @@ def test_parse_legit_eml():
     assert record.return_path is None
     assert record.subject == "Quarterly Report Attached"
     assert "quarterly report" in record.body_text.lower()
-    assert "https://company.com/reports/q4-2023" in record.links
+    assert any(href == "https://company.com/reports/q4-2023" for _, href in record.links)
     assert len(record.attachments) == 0
 
 
@@ -32,7 +32,7 @@ def test_parse_phishing_eml():
     assert record.return_path == "bounce@spammer.net"
     assert record.subject == "URGENT: Your Account Has Been Compromised!"
     assert "compromised" in record.body_text.lower()
-    assert "https://verify-account-now.malicious-site.com/login?token=abc123" in record.links
+    assert any(href == "https://verify-account-now.malicious-site.com/login?token=abc123" for _, href in record.links)
     assert len(record.attachments) == 0
 
 
@@ -99,8 +99,8 @@ Visit https://example.com and https://test.com/page
         record = parse_eml_string(raw)
 
         assert len(record.links) == 2
-        assert "https://example.com" in record.links
-        assert "https://test.com/page" in record.links
+        assert any(href == "https://example.com" for _, href in record.links)
+        assert any(href == "https://test.com/page" for _, href in record.links)
 
     def test_parse_eml_string_no_body(self):
         """Test parsing email with no body text."""

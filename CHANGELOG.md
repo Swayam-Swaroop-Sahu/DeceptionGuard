@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2026-10-07
+### Added
+- Robust ingestion pipeline using Python's `email` and `mailbox` standard libraries.
+- HTML to text parser isolating visible vs hidden text.
+- Advanced URL extraction storing anchor text and href pairs.
+- Extract advanced headers: Message-ID, Received chain, Authentication-Results.
+- Advanced attachment parsing: size, mime type mismatches, and double extensions.
+- Text normalization: NFKC standard, extraction of Bidi and Zero-width characters.
+- Fuzzing suite for the ingestion parser.
+
 ## [0.0.1] - 2026-10-07
 ### Added
 - Standard Python package structure (`pyproject.toml`, `src/deceptionguard`).
