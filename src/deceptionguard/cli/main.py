@@ -86,11 +86,11 @@ def scan_email(file_path: str) -> None:
     print(f"{'=' * 60}\n")
 
 
-def evaluate_dataset(dataset_path: str) -> None:
+def evaluate_dataset(args: argparse.Namespace) -> None:
     """Run evaluation on a dataset and generate report."""
     import sys
 
-
+    dataset_path = args.dataset
     path = Path(dataset_path)
     if not path.is_absolute():
         # Make it relative to current working directory
@@ -100,9 +100,18 @@ def evaluate_dataset(dataset_path: str) -> None:
         print(f"Error: Dataset not found: {dataset_path}", file=sys.stderr)
         sys.exit(1)
 
-    from deceptionguard.evaluation.run_evaluation import run_evaluation_suite
     try:
-        run_evaluation_suite(dataset_path)
+        if args.suite == "full":
+            from deceptionguard.evaluation.run_evaluation import run_evaluation_suite
+            run_evaluation_suite(dataset_path)
+        elif args.suite == "adversarial":
+            from deceptionguard.evaluation.adversarial import evaluate_robustness
+            from deceptionguard.evaluation.run_evaluation import load_and_prep_dataset
+            records, labels, _ = load_and_prep_dataset(dataset_path)
+            evaluate_robustness(records, labels)
+        else:
+            from deceptionguard.evaluation.run_evaluation import run_evaluation_suite
+            run_evaluation_suite(dataset_path) # standard is aliased to full for now
     except Exception as e:
         print(f"Evaluation failed: {e}", file=sys.stderr)
         sys.exit(1)
@@ -139,7 +148,7 @@ Examples:
         description="Evaluate DeceptionGuard system on a labeled dataset"
     )
     eval_parser.add_argument("--dataset", required=True, help="Path to labeled dataset CSV")
-    eval_parser.add_argument("--suite", choices=["standard", "full"], default="standard", help="Evaluation suite to run")
+    eval_parser.add_argument("--suite", choices=["standard", "full", "adversarial"], default="standard", help="Evaluation suite to run")
 
     # Serve subcommand
     serve_parser = subparsers.add_parser(
@@ -155,11 +164,7 @@ Examples:
     if args.command == "scan":
         scan_email(args.file)
     elif args.command == "evaluate":
-        if args.suite == "full":
-            from deceptionguard.evaluation.run_evaluation import run_evaluation_suite
-            run_evaluation_suite(args.dataset)
-        else:
-            evaluate_dataset(args.dataset)
+        evaluate_dataset(args)
     elif args.command == "serve":
         from deceptionguard.ui.server import run_server
         run_server(host=args.host, port=args.port)
