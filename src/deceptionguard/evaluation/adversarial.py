@@ -108,7 +108,6 @@ def evaluate_robustness(
         prob = run_pipeline(rec, use_evidence=True, use_graph=True)
         base_preds.append(prob)
 
-    base_labels = [1 if p >= 0.5 else 0 for p in base_preds]
     base_metrics = compute_all_metrics(labels, base_preds)
 
     results = {
