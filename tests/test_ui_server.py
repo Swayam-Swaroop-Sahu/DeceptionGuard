@@ -59,3 +59,19 @@ def test_path_traversal(ui_server):
         raise AssertionError("Should have thrown 403 or 400")
     except HTTPError as e:
         assert e.code in [403, 400, 404]
+
+def test_results_api_not_found(ui_server):
+    try:
+        req = Request(f"{ui_server}/api/v1/results/missing.json")
+        urlopen(req)
+        raise AssertionError("Should have thrown 404")
+    except HTTPError as e:
+        assert e.code == 404
+
+def test_results_api_path_traversal(ui_server):
+    try:
+        req = Request(f"{ui_server}/api/v1/results/../../ui/server.py")
+        urlopen(req)
+        raise AssertionError("Should have thrown 403 or 404 or 400")
+    except HTTPError as e:
+        assert e.code in [403, 404, 400]

@@ -40,9 +40,13 @@ class DeceptionGuardHandler(BaseHTTPRequestHandler):
     """Handles API requests and static file serving."""
 
     def do_GET(self) -> None:
-        """Serve static files."""
+        """Serve static files and results."""
         parsed_path = urllib.parse.urlparse(self.path)
         path = parsed_path.path
+
+        if path.startswith("/api/v1/results/"):
+            self._handle_results_get(path)
+            return
 
         # Default to index.html
         if path == "/" or path == "":
@@ -160,6 +164,39 @@ class DeceptionGuardHandler(BaseHTTPRequestHandler):
         except Exception as e:
             logger.exception("Analysis failed")
             self._send_json(500, {"error": str(e)})
+
+    def _handle_results_get(self, path: str) -> None:
+        """Serve files from the results directory."""
+        from deceptionguard.evaluation.run_evaluation import RESULTS_DIR
+        filename = path.replace("/api/v1/results/", "")
+
+        target_path = (RESULTS_DIR / filename).resolve()
+
+        try:
+            if not str(target_path).startswith(str(RESULTS_DIR.resolve())):
+                self.send_error(403, "Forbidden")
+                return
+        except Exception:
+            self.send_error(400, "Bad Request")
+            return
+
+        if not target_path.exists() or not target_path.is_file():
+            self.send_error(404, "Result file not found")
+            return
+
+        try:
+            with open(target_path, "rb") as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Cache-Control", "no-cache")
+            _set_security_headers(self)
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            logger.error(f"Error serving result file {path}: {e}")
+            self.send_error(500, "Internal Server Error")
 
     def _send_json(self, status: int, data: dict[str, Any]) -> None:
         """Helper to send JSON response."""

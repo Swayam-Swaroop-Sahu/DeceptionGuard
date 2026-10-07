@@ -17,11 +17,16 @@
                 </svg>
                 DeceptionGuard Console
             </div>
+            <div style="display: flex; gap: var(--space-3);">
+                <a href="#" id="navAnalyze" class="active" style="color: var(--color-text-inverse); font-weight: bold;">Analyze</a>
+                <a href="#" id="navEvaluation" style="color: rgba(255,255,255,0.7);">Evaluation</a>
+            </div>
         </div>
     </nav>
 
     <main class="container mt-4">
-        <div class="grid-12">
+        <!-- Analyze View -->
+        <div id="viewAnalyze" class="grid-12">
             <!-- Left Column: Input -->
             <div class="col-6">
                 <div class="card">
@@ -84,6 +89,39 @@
 
                     <h3 class="mt-4">Intent Graph Details</h3>
                     <pre id="intentGraphJson" style="font-family: var(--font-mono); font-size: 0.75rem; background: var(--color-bg-alt); padding: var(--space-2); border-radius: var(--radius-sm); overflow-x: auto;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation View -->
+        <div id="viewEvaluation" class="grid-12 hidden">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="card-title">Evaluation Suite Results</h2>
+                        <button id="loadEvalBtn" class="btn btn-secondary">Load results/summary.json</button>
+                    </div>
+                    <div id="evalError" class="mt-2 hidden" style="color: var(--color-risk-high); font-weight: bold;"></div>
+                    
+                    <div id="evalContent" class="hidden mt-4">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ablation</th>
+                                    <th>F1 Score (95% CI)</th>
+                                    <th>ROC-AUC (95% CI)</th>
+                                    <th>Expected Calibration Error (ECE)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="evalTableBody">
+                            </tbody>
+                        </table>
+                        
+                        <div class="mt-4 p-4" style="background: var(--color-bg-alt); border-radius: var(--radius-sm); padding: var(--space-2);">
+                            <strong>McNemar's Test (Baseline vs Full Pipeline):</strong>
+                            <span id="mcnemarResult"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

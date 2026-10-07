@@ -22,3 +22,15 @@ export async function analyzeEmail(content) {
     
     return await response.json();
 }
+
+export async function fetchEvaluationSummary() {
+    const response = await fetch('/api/v1/results/summary.json', {
+        method: 'GET',
+    });
+    
+    if (!response.ok) {
+        throw new Error('Could not fetch summary.json (Ensure `dg evaluate --suite full` was run)');
+    }
+    
+    return await response.json();
+}
