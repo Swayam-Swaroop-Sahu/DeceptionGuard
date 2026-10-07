@@ -1,5 +1,6 @@
-import pytest
+from unittest.mock import MagicMock
 
+from deceptionguard.config import LLMConfig
 from deceptionguard.ingestion.email_record import EmailRecord
 from deceptionguard.intent_graph.extractor import _fallback_extract, extract_intent_graph
 from deceptionguard.intent_graph.schema import validate_graph
@@ -8,50 +9,41 @@ from deceptionguard.intent_graph.schema import validate_graph
 def test_validate_graph_valid():
     """Test validation of a valid intent graph."""
     graph = {
-        "claimed_identity": "Security Team",
-        "requested_action": "Verify account",
-        "urgency_signals": ["urgent", "immediate"],
-        "authority_signals": ["security", "department"],
-        "payload_targets": ["https://malicious-site.com/login"]
+        "urgency_pressure": True,
+        "financial_request": False,
+        "action_requested": "Click here",
+        "deception_tone": "fear",
+        "trust_abuse": "impersonating security"
     }
     assert validate_graph(graph) is True
-
 
 def test_validate_graph_none_values():
     """Test validation with None values."""
     graph = {
-        "claimed_identity": None,
-        "requested_action": None,
-        "urgency_signals": [],
-        "authority_signals": [],
-        "payload_targets": []
+        "urgency_pressure": False,
+        "financial_request": False,
+        "action_requested": None,
+        "deception_tone": None,
+        "trust_abuse": None
     }
     assert validate_graph(graph) is True
 
-
-def test_validate_graph_missing_key():
-    """Test validation fails with missing key."""
+    # Pydantic fills defaults for missing keys, so we test something that can't be cast.
     graph = {
-        "claimed_identity": "Test",
-        "requested_action": "Test",
-        "urgency_signals": [],
-        "authority_signals": [],
-        # missing payload_targets
+        "urgency_pressure": "this is not a bool and can't be cast to one",
     }
     assert validate_graph(graph) is False
-
 
 def test_validate_graph_wrong_type():
     """Test validation fails with wrong type."""
     graph = {
-        "claimed_identity": "Test",
-        "requested_action": "Test",
-        "urgency_signals": "not a list",  # should be list
-        "authority_signals": [],
-        "payload_targets": []
+        "urgency_pressure": [1, 2, 3], # wrong type
+        "financial_request": False,
+        "action_requested": None,
+        "deception_tone": None,
+        "trust_abuse": None
     }
     assert validate_graph(graph) is False
-
 
 def test_fallback_extract_phishing():
     """Test fallback extraction detects phishing signals."""
@@ -61,28 +53,17 @@ def test_fallback_extract_phishing():
         return_path="bounce@spammer.net",
         subject="URGENT: Your Account Has Been Compromised!",
         date=None,
-        body_text="URGENT SECURITY ALERT! Your account has been compromised! Immediate action required. Click the link below to verify your identity and secure your account: https://verify-account-now.malicious-site.com/login?token=abc123",
-        links=["https://verify-account-now.malicious-site.com/login?token=abc123"],
+        body_text="URGENT SECURITY TEAM ALERT! Please pay the invoice immediately.",
+        links=[],
         attachments=[]
     )
-
     graph = _fallback_extract(record)
 
-    # Should detect urgency signals (case-insensitive)
-    urgency_lower = [s.lower() for s in graph["urgency_signals"]]
-    assert "urgent" in urgency_lower
-    assert "immediate" in urgency_lower or "action required" in urgency_lower
-
-    # Should detect authority signals
-    authority_lower = [s.lower() for s in graph["authority_signals"]]
-    assert "security" in authority_lower
-
-    # Should have links as payload targets
-    assert "https://verify-account-now.malicious-site.com/login?token=abc123" in graph["payload_targets"]
-
-    # Should have valid schema
+    assert graph["urgency_pressure"] is True
+    assert graph["financial_request"] is True
+    assert graph["deception_tone"] == "fear"
+    assert "security team" in (graph["trust_abuse"] or "")
     assert validate_graph(graph) is True
-
 
 def test_fallback_extract_legitimate():
     """Test fallback extraction on legitimate email."""
@@ -96,41 +77,21 @@ def test_fallback_extract_legitimate():
         links=[],
         attachments=[]
     )
-
     graph = _fallback_extract(record)
 
-    # Should have empty urgency/authority for normal email
-    assert len(graph["urgency_signals"]) == 0
-    assert len(graph["authority_signals"]) == 0
+    assert graph["urgency_pressure"] is False
+    assert graph["financial_request"] is False
+    assert graph["deception_tone"] == "curiosity" # "attached"
     assert validate_graph(graph) is True
 
+import sys
 
-def test_extract_intent_graph_with_fallback():
-    """Test extract_intent_graph returns fallback graph when no API available."""
-    record = EmailRecord(
-        sender="security@payroll-services.xyz",
-        reply_to="verify@malicious-domain.com",
-        return_path=None,
-        subject="URGENT: Verify Your Account",
-        date=None,
-        body_text="URGENT: Your account has been compromised! Click here to verify immediately: https://malicious-site.com/verify",
-        links=["https://malicious-site.com/verify"],
-        attachments=[]
-    )
+# Mock litellm entirely before any function runs it
+mock_litellm = MagicMock()
+sys.modules['litellm'] = mock_litellm
 
-    graph = extract_intent_graph(record)
-
-    # Should return a valid graph (via fallback)
-    assert validate_graph(graph) is True
-
-    # Check urgency signals (case-insensitive)
-    urgency_lower = [s.lower() for s in graph["urgency_signals"]]
-    assert "urgent" in urgency_lower
-    assert "https://malicious-site.com/verify" in graph["payload_targets"]
-
-
-def test_extract_intent_graph_empty_email():
-    """Test extract_intent_graph with minimal email."""
+def test_extract_intent_graph_llm():
+    """Test extract_intent_graph uses litellm."""
     record = EmailRecord(
         sender="test@example.com",
         reply_to=None,
@@ -142,11 +103,40 @@ def test_extract_intent_graph_empty_email():
         attachments=[]
     )
 
-    graph = extract_intent_graph(record)
+    mock_resp = MagicMock()
+    mock_resp.choices = [MagicMock()]
+    mock_resp.choices[0].message.content = '{"urgency_pressure": true, "financial_request": false, "action_requested": "click", "deception_tone": "neutral", "trust_abuse": null}'
 
-    # Should return valid graph structure (may be empty via fallback)
-    assert validate_graph(graph) is True
+    # Reset mock and assign return value
+    mock_litellm.completion.reset_mock()
+    mock_litellm.completion.return_value = mock_resp
 
+    config = LLMConfig(api_key="sk-test", model="gpt-4o-mini")
+    graph = extract_intent_graph(record, llm_config=config)
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    assert graph["urgency_pressure"] is True
+    assert graph["action_requested"] == "click"
+    mock_litellm.completion.assert_called_once()
+
+def test_extract_intent_graph_llm_failure():
+    """Test extract_intent_graph falls back when LLM fails."""
+    record = EmailRecord(
+        sender="test@example.com",
+        reply_to=None,
+        return_path=None,
+        subject="URGENT",
+        date=None,
+        body_text="Please wire the money.",
+        links=[],
+        attachments=[]
+    )
+
+    mock_litellm.completion.reset_mock()
+    mock_litellm.completion.side_effect = Exception("API Error")
+
+    config = LLMConfig(api_key="sk-test", model="gpt-4o-mini")
+    graph = extract_intent_graph(record, llm_config=config)
+
+    # Should fall back to heuristic
+    assert graph["urgency_pressure"] is True
+    assert graph["financial_request"] is True

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-07
+### Added
+- Phase 3: Intent Graph Overhaul.
+- Replaced `openai` SDK with `litellm` for standardized, multi-model API access.
+- Implemented robust `Pydantic` schema (`IntentGraph`) for deterministic structural validation.
+- Extracted psychological factors: `urgency_pressure`, `financial_request`, `action_requested`, `deception_tone`, and `trust_abuse`.
+- Fallback heuristic regex/keyword rules for all new Pydantic schema fields for offline reliability.
+
 ## [0.2.0] - 2026-10-07
 ### Added
 - Phase 2: Deterministic Evidence Layer.

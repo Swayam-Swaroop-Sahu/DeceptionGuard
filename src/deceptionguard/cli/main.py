@@ -73,14 +73,11 @@ def scan_email(file_path: str) -> None:
 
     # Show intent graph summary
     print("\nIntent Graph Summary:")
-    print(f"  Claimed Identity: {graph['claimed_identity'] or '(none detected)'}")
-    print(f"  Requested Action: {graph['requested_action'] or '(none detected)'}")
-    urgency = graph["urgency_signals"]
-    authority = graph["authority_signals"]
-    payload = graph["payload_targets"]
-    print(f"  Urgency Signals: {', '.join(urgency) if urgency else '(none)'}")
-    print(f"  Authority Signals: {', '.join(authority) if authority else '(none)'}")
-    print(f"  Payload Targets: {', '.join(payload) if payload else '(none)'}")
+    print(f"  Urgency Pressure: {graph.get('urgency_pressure', False)}")
+    print(f"  Financial Request: {graph.get('financial_request', False)}")
+    print(f"  Action Requested: {graph.get('action_requested') or '(none detected)'}")
+    print(f"  Deception Tone: {graph.get('deception_tone') or '(none detected)'}")
+    print(f"  Trust Abuse: {graph.get('trust_abuse') or '(none detected)'}")
     print(f"{'=' * 60}\n")
 
 
