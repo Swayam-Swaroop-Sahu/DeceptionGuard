@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const evidenceTableBody = document.getElementById('evidenceTableBody');
     const intentGraphGrid = document.getElementById('intentGraphGrid');
     const emailContent = document.getElementById('emailContent');
+    const iocCard = document.getElementById('iocCard');
+    const iocTableBody = document.getElementById('iocTableBody');
+    const radarChartContainer = document.getElementById('radarChartContainer');
+    const threatRadarChartCtx = document.getElementById('threatRadarChart').getContext('2d');
+    let radarChartInstance = null;
 
     function defang(text) {
         if (!text) return '';
@@ -56,11 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (riskRecommendation) {
             riskRecommendation.classList.remove('hidden');
             if (data.level === 'CRITICAL' || data.level === 'HIGH') {
-                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-high);">⚠️ <strong>CAUTION:</strong> High risk detected! Do not click any links or download attachments. Report to IT immediately.</span>`;
+                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-high);"> <strong>CAUTION:</strong> High risk detected! Do not click any links or download attachments. Report to IT immediately.</span>`;
             } else if (data.level === 'MEDIUM') {
-                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-medium);">🤔 <strong>SUSPICIOUS:</strong> Proceed with caution. Verify the sender's identity before taking any requested actions.</span>`;
+                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-medium);"> <strong>SUSPICIOUS:</strong> Proceed with caution. Verify the sender's identity before taking any requested actions.</span>`;
             } else {
-                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-minimal);">✅ <strong>SAFE:</strong> No significant threats detected. It appears safe to interact with this email.</span>`;
+                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-minimal);"> <strong>SAFE:</strong> No significant threats detected. It appears safe to interact with this email.</span>`;
             }
         }
 
@@ -147,6 +152,106 @@ document.addEventListener('DOMContentLoaded', () => {
             intentGraphGrid.innerHTML = '<div class="text-muted">No semantic intent extracted.</div>';
         }
 
+        // IOC Extraction
+        const textToAnalyze = (data.record.body_text || "") + " " + (data.record.sender || "");
+        const extractedIocs = [];
+        const ipRegex = /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g;
+        const urlRegex = /https?:\/\/[^\s]+/gi;
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+        const ips = [...new Set(textToAnalyze.match(ipRegex) || [])];
+        const urls = [...new Set(textToAnalyze.match(urlRegex) || [])];
+        const emails = [...new Set(textToAnalyze.match(emailRegex) || [])];
+
+        ips.forEach(ip => extractedIocs.push({ value: ip, type: 'IPv4' }));
+        urls.forEach(url => extractedIocs.push({ value: url, type: 'URL' }));
+        emails.forEach(em => extractedIocs.push({ value: em, type: 'Email' }));
+
+        if (extractedIocs.length > 0) {
+            iocTableBody.innerHTML = '';
+            extractedIocs.forEach(ioc => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem;">${defang(ioc.value)}</td>
+                    <td><span class="badge badge-minimal">${ioc.type}</span></td>
+                `;
+                iocTableBody.appendChild(tr);
+            });
+            iocCard.classList.remove('hidden');
+        } else {
+            iocCard.classList.add('hidden');
+        }
+
+        // Radar Chart Rendering
+        radarChartContainer.style.display = 'block';
+        if (radarChartInstance) {
+            radarChartInstance.destroy();
+        }
+        
+        let dimForgery = 0, dimUrgency = 0, dimFinancial = 0, dimPayload = 0, dimObfuscation = 0;
+        
+        if (data.graph) {
+            if (data.graph.urgency_level === 'HIGH') dimUrgency = 100;
+            else if (data.graph.urgency_level === 'MEDIUM') dimUrgency = 50;
+            else if (data.graph.urgency_level === 'LOW') dimUrgency = 20;
+
+            if (data.graph.financial_request) dimFinancial = 90;
+            if (data.graph.suspicious_links_present) dimPayload = Math.max(dimPayload, 80);
+        }
+
+        data.evidence.forEach(e => {
+            const sevWeight = e.severity === 'CRITICAL' ? 100 : (e.severity === 'HIGH' ? 80 : (e.severity === 'MEDIUM' ? 50 : 20));
+            if (e.evidence_type.includes('ip_literal') || e.evidence_type.includes('suspicious_link')) dimPayload = Math.max(dimPayload, sevWeight);
+            if (e.evidence_type.includes('hidden_text') || e.evidence_type.includes('zero_width')) dimObfuscation = Math.max(dimObfuscation, sevWeight);
+            if (e.evidence_type.includes('mismatch') || e.evidence_type.includes('lookalike') || e.evidence_type.includes('dmarc')) dimForgery = Math.max(dimForgery, sevWeight);
+        });
+
+        // Ensure minimums if there's any risk
+        if (data.score > 0) {
+            dimForgery = Math.max(dimForgery, 10);
+            dimUrgency = Math.max(dimUrgency, 10);
+            dimFinancial = Math.max(dimFinancial, 10);
+            dimPayload = Math.max(dimPayload, 10);
+            dimObfuscation = Math.max(dimObfuscation, 10);
+        }
+
+        radarChartInstance = new Chart(threatRadarChartCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Forgery', 'Urgency', 'Financial', 'Payload', 'Obfuscation'],
+                datasets: [{
+                    label: 'Threat Vector Profile',
+                    data: [dimForgery, dimUrgency, dimFinancial, dimPayload, dimObfuscation],
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(239, 68, 68, 1)'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0,0,0,0.1)' },
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        pointLabels: {
+                            font: { family: "'Inter', sans-serif", size: 11, weight: 'bold' }
+                        },
+                        ticks: {
+                            display: false,
+                            min: 0,
+                            max: 100,
+                            stepSize: 20
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
         // Sanitized Email
         emailContent.innerHTML = `<strong>Sender:</strong> ${defang(data.record.sender)}<br>` +
             `<strong>Subject:</strong> ${defang(data.record.subject)}<br><br>` +
@@ -163,6 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (riskRecommendation) {
             riskRecommendation.classList.add('hidden');
         }
+        if (iocCard) iocCard.classList.add('hidden');
+        if (radarChartContainer) radarChartContainer.style.display = 'none';
 
         // Reset donut state
         if (riskDonutFill) {

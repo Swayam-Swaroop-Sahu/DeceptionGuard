@@ -40,7 +40,7 @@ graph TD
 | **Evidence Detectors** | Extensible, regex and rule-based detectors emitting specific `Evidence` objects (e.g., `BRAND_TYPOSQUATTING`, `URL_IP_LITERAL`). | Pure Python heuristics |
 | **Intent Graph** | Extracts a structured schema (Urgency, Financial, Actions, Tone) via LLM (e.g., GPT-4 / open-weights) or local heuristic fallbacks if unauthenticated. | `litellm` / `urllib` standard APIs |
 | **Risk Engine** | Computes a final deterministic risk score via bounded, dynamically-configurable additive weights (capped at 100). | TOML-based configurations |
-| **UI & CLI** | Exposes operations (`scan`, `evaluate`, `serve`) to batch analyze or explore graphs. | `argparse`, HTML5/JS |
+| **UI & CLI** | Exposes operations (`scan`, `evaluate`, `serve`) to batch analyze or explore graphs. The UI features a premium dashboard with an **Interactive Threat Radar Chart** mapping 5 risk dimensions (Forgery, Urgency, Financial, Payload, Obfuscation) and an **Extracted IOCs Panel** for quick threat hunting. | `argparse`, HTML5/JS/CSS, Chart.js |
 
 ---
 

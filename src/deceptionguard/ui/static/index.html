@@ -7,6 +7,8 @@
     <!-- CSS tokens and components -->
     <link rel="stylesheet" href="/css/tokens.css">
     <link rel="stylesheet" href="/css/components.css">
+    <!-- Chart.js for Threat Radar -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <nav class="navbar">
@@ -56,6 +58,23 @@
                     <p class="text-muted">HTML has been stripped. URLs are defanged.</p>
                     <div id="emailContent"></div>
                 </div>
+                
+                <!-- IOC View -->
+                <div id="iocCard" class="card hidden mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">Extracted IOCs</h2>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.8rem;">Potential Indicators of Compromise found in payload.</p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iocTableBody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Right Column: Results -->
@@ -79,6 +98,10 @@
                     </div>
                     
                     <div id="riskRecommendation" class="mb-4 text-center p-3" style="font-weight: 500; font-size: 0.95rem; border-radius: var(--radius-sm); background: var(--color-bg-alt); border-left: 4px solid transparent;"></div>
+
+                    <div id="radarChartContainer" class="mt-4 mb-4" style="max-width: 350px; margin: 0 auto; display: none;">
+                        <canvas id="threatRadarChart"></canvas>
+                    </div>
 
                     <h3 class="mt-4">Factor Waterfall</h3>
                     <div id="factorWaterfall" class="mb-2"></div>
