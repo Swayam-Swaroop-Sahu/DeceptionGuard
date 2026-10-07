@@ -56,6 +56,6 @@ def test_path_traversal(ui_server):
     try:
         req = Request(f"{ui_server}/../../../etc/passwd")
         urlopen(req)
-        assert False, "Should have thrown 403 or 400"
+        raise AssertionError("Should have thrown 403 or 400")
     except HTTPError as e:
         assert e.code in [403, 400, 404]
