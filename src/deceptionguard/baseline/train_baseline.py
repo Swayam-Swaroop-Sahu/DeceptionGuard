@@ -11,7 +11,7 @@ from pathlib import Path
 # Guard optional imports
 _HAS_SKLEARN = False
 try:
-    from sklearn.metrics import f1_score
+    from sklearn.metrics import precision_recall_fscore_support
     from sklearn.model_selection import train_test_split
 
     _HAS_SKLEARN = True
@@ -133,12 +133,28 @@ def main() -> None:
     predictions = classifier.predict(test_texts)
     pred_labels = [1 if p > 0.5 else 0 for p in predictions]
 
-    # Calculate F1 score
-    f1 = f1_score(test_labels, pred_labels)
+    # Calculate metrics
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        test_labels, pred_labels, average="binary"
+    )
+
+    metrics = {
+        "precision": float(precision),
+        "recall": float(recall),
+        "f1": float(f1),
+        "test_samples": len(test_data),
+    }
+
+    # Save to JSON
+    import json
+    metrics_path = processed_dir / "metrics.json"
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=4)
 
     print("\nBaseline Classifier Results:")
     print(f"Test F1 Score: {f1:.4f}")
     print(f"Test Samples: {len(test_data)}")
+    print(f"Metrics saved to {metrics_path}")
 
     # Print some example predictions
     print("\nSample Predictions:")
