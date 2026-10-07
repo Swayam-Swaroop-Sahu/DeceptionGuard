@@ -45,7 +45,7 @@ DeceptionGuard is a local-first Python tool for analyzing emails and detecting p
 - **Comprehensive Evaluation**: `--suite full` runs ablations and calculates ECE, ROC-AUC, PR-AUC, and bootstrap CIs. `--suite adversarial` measures degradation against homoglyphs, zero-width chars, and typos.
 - **Reproducibility**: One-click scripts (`scripts/reproduce.sh` or `Makefile`) to run end-to-end evaluation and fuzzing.
 - **CLI Interface**: `scan`, `evaluate`, and `serve` commands
-- **Professional Web Console**: Local UI (`dg serve`) with interactive visualization of risk factors, and a dedicated **Evaluation** tab to browse ablation suite metrics.
+- **Professional Web Console**: Local UI (`dg serve`) with interactive visualization of risk factors, batch processing, and dedicated tabs for Evaluation, Adversarial Robustness, and System Overview.
 
 ## Quick Start
 

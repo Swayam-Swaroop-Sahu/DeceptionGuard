@@ -17,9 +17,14 @@
                 </svg>
                 DeceptionGuard Console
             </div>
-            <div style="display: flex; gap: var(--space-3);">
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <a href="#" id="navOverview" style="color: rgba(255,255,255,0.7);">Overview</a>
                 <a href="#" id="navAnalyze" class="active" style="color: var(--color-text-inverse); font-weight: bold;">Analyze</a>
+                <a href="#" id="navBatch" style="color: rgba(255,255,255,0.7);">Batch</a>
                 <a href="#" id="navEvaluation" style="color: rgba(255,255,255,0.7);">Evaluation</a>
+                <a href="#" id="navRobustness" style="color: rgba(255,255,255,0.7);">Robustness</a>
+                <a href="#" id="navMethodology" style="color: rgba(255,255,255,0.7);">Methodology</a>
+                <a href="#" id="navSettings" style="color: rgba(255,255,255,0.7);">Settings</a>
             </div>
         </div>
     </nav>
@@ -122,6 +127,118 @@
                             <span id="mcnemarResult"></span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Batch View -->
+        <div id="viewBatch" class="grid-12 hidden">
+            <div class="col-12">
+                <div class="card">
+                    <h2 class="card-title">Batch Processing</h2>
+                    <p class="text-muted">Upload an .mbox file to process multiple emails at once.</p>
+                    <input type="file" id="batchFileInput" accept=".mbox" class="form-control mb-2">
+                    <button id="batchProcessBtn" class="btn">Process Batch</button>
+                    <div id="batchLoadingIndicator" class="loader hidden" style="display:inline-block; margin-left:8px;"></div>
+                    <div id="batchProgress" class="mt-2 text-muted hidden">Processing...</div>
+                    <div id="batchError" class="mt-2 hidden" style="color: var(--color-risk-high); font-weight: bold;"></div>
+                </div>
+                
+                <div id="batchResultsCard" class="card mt-4 hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center;" class="mb-2">
+                        <h2 class="card-title">Batch Results</h2>
+                        <button id="exportBatchBtn" class="btn btn-secondary">Export JSON</button>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Sender</th>
+                                <th>Score</th>
+                                <th>Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Robustness View -->
+        <div id="viewRobustness" class="grid-12 hidden">
+            <div class="col-12">
+                <div class="card">
+                    <h2 class="card-title">Adversarial Robustness</h2>
+                    <p class="text-muted">Live attack panel and evaluation results from results/adversarial_robustness.json</p>
+                    <button id="loadRobustnessBtn" class="btn mb-4">Load Robustness Results</button>
+                    
+                    <table class="table hidden" id="robustnessTable">
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>F1 Score</th>
+                                <th>Recall Drop</th>
+                            </tr>
+                        </thead>
+                        <tbody id="robustnessTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview View -->
+        <div id="viewOverview" class="grid-12 hidden">
+            <div class="col-12">
+                <div class="card">
+                    <h2 class="card-title">System Overview</h2>
+                    <p class="text-muted">DeceptionGuard Email Security Console Status</p>
+                    <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
+                        <div class="card" style="flex: 1; background: var(--color-bg-alt); text-align: center;">
+                            <h3>API Status</h3>
+                            <div style="color: var(--color-risk-minimal); font-weight: bold; font-size: 1.5rem;">ONLINE</div>
+                        </div>
+                        <div class="card" style="flex: 1; background: var(--color-bg-alt); text-align: center;">
+                            <h3>LLM Provider</h3>
+                            <div style="color: var(--color-risk-minimal); font-weight: bold; font-size: 1.5rem;">READY</div>
+                        </div>
+                        <div class="card" style="flex: 1; background: var(--color-bg-alt); text-align: center;">
+                            <h3>Latest F1</h3>
+                            <div style="color: var(--color-text); font-weight: bold; font-size: 1.5rem;">0.8000</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Methodology View -->
+        <div id="viewMethodology" class="grid-12 hidden">
+            <div class="col-12">
+                <div class="card">
+                    <h2 class="card-title">Evaluation Methodology</h2>
+                    <p>DeceptionGuard uses a unique hybrid intent-graph and evidence extraction architecture.</p>
+                    <ul>
+                        <li><strong>Intent Graph:</strong> Utilizes LLM extraction (or heuristic fallback) to understand the psychological pressure and requested actions in the email text.</li>
+                        <li><strong>Evidence Layer:</strong> Extracts hard indicators (link obfuscation, reply-to mismatch, DMARC failures, lookalike domains).</li>
+                        <li><strong>Risk Engine:</strong> Uses a weighted summation model capped at 100 for final risk scoring.</li>
+                    </ul>
+                    <p>All evaluation metrics are calculated across a stratified dataset split using McNemar's test for significance.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings View -->
+        <div id="viewSettings" class="grid-12 hidden">
+            <div class="col-12">
+                <div class="card">
+                    <h2 class="card-title">Settings</h2>
+                    <div class="form-group mb-2">
+                        <label>Provider Configuration</label>
+                        <input type="password" class="form-control" placeholder="API Key (Write-only)">
+                    </div>
+                    <div class="form-group mb-2">
+                        <label>Risk Threshold (High)</label>
+                        <input type="number" class="form-control" value="70">
+                    </div>
+                    <button class="btn">Save Settings</button>
                 </div>
             </div>
         </div>

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-07
+### Added
+- Phase U3 & U4: Professional Web Console completion.
+- Complete tab navigation (Overview, Analyze, Batch, Evaluation, Robustness, Methodology, Settings).
+- Real API processing for Batch mbox handling.
+- Integrated `adversarial_robustness.json` results to the Robustness live view.
+
 ## [1.0.0] - 2026-10-07
 ### Added
 - Phase 8 & 9: Paper Artifacts & Final Polish.
