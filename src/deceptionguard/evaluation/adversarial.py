@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import logging
 import random
-from copy import deepcopy
 
 from deceptionguard.evaluation.metrics import compute_all_metrics
 from deceptionguard.evaluation.run_evaluation import RESULTS_DIR, run_pipeline
@@ -70,8 +69,7 @@ def apply_typos(text: str, mutation_rate: float = 0.1) -> str:
 
 def mutate_record(record: EmailRecord, strategy: str) -> EmailRecord:
     """Apply a mutation strategy to an EmailRecord."""
-    mutated = deepcopy(record)
-    text = mutated.body_text
+    text = record.body_text
 
     if strategy == "homoglyphs":
         text = apply_homoglyphs(text)
@@ -84,10 +82,12 @@ def mutate_record(record: EmailRecord, strategy: str) -> EmailRecord:
         text = apply_zero_width(text, 0.1)
         text = apply_typos(text, 0.05)
 
-    mutated.body_text = text
-    if mutated.subject:
-        mutated.subject = apply_typos(mutated.subject) if strategy == "typos" else mutated.subject
-    return mutated
+    mutated_kwargs = {"body_text": text}
+    if record.subject:
+        mutated_kwargs["subject"] = apply_typos(record.subject) if strategy == "typos" else record.subject
+
+    import dataclasses
+    return dataclasses.replace(record, **mutated_kwargs)
 
 def evaluate_robustness(
     records: list[EmailRecord],
