@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-10-07
+### Added
+- Phase U1: Web UI Foundation & Analyze Page.
+- Professional consulting-grade web UI with deep forest green styling.
+- Local stdlib-only HTTP server (`dg serve`) with strict CSP and CSRF protection.
+- REST API endpoint `/api/v1/analyze` for JSON analysis output.
+- Interactive web UI for dropping/pasting EML files with risk gauge, factor waterfall, and evidence list.
+
 ## [0.5.0] - 2026-10-07
 ### Added
 - Phase 5: Baseline ML Isolation & Metrics.
