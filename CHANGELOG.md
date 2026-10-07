@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-07
+### Added
+- Phase 5: Baseline ML Isolation & Metrics.
+- Completely isolated baseline classifier into an optional `[dev]` dependency using scikit-learn.
+- Baseline training script now automatically computes precision, recall, and F1, and saves to `metrics.json`.
+- Safely handles missing scikit-learn dependencies.
+
 ## [0.4.0] - 2026-10-07
 ### Added
 - Phase 4: Risk Engine Rewrite.
