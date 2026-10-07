@@ -75,3 +75,13 @@ def test_results_api_path_traversal(ui_server):
         raise AssertionError("Should have thrown 403 or 404 or 400")
     except HTTPError as e:
         assert e.code in [403, 404, 400]
+
+def test_batch_api_valid(ui_server):
+    mbox_content = b"From mbox@test\nFrom: test@example.com\nSubject: Test\n\nHello\n"
+    req = Request(f"{ui_server}/api/v1/batch", data=mbox_content, headers={"Content-Type": "application/octet-stream"})
+    with urlopen(req) as response:
+        assert response.status == 200
+        data = json.loads(response.read().decode("utf-8"))
+        assert "results" in data
+        assert len(data["results"]) == 1
+        assert data["results"][0]["sender"] == "test@example.com"

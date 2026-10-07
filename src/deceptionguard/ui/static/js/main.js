@@ -1,4 +1,4 @@
-import { analyzeEmail, fetchEvaluationSummary } from './api.js';
+import { analyzeEmail, fetchEvaluationSummary, processBatch, fetchRobustnessSummary } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyzeBtn');
@@ -103,40 +103,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Evaluation Tab Navigation
-    const navAnalyze = document.getElementById('navAnalyze');
-    const navEvaluation = document.getElementById('navEvaluation');
-    const viewAnalyze = document.getElementById('viewAnalyze');
-    const viewEvaluation = document.getElementById('viewEvaluation');
+    // Tab Navigation
+    const tabs = ['Overview', 'Analyze', 'Batch', 'Evaluation', 'Robustness', 'Methodology', 'Settings'];
     
-    function switchTab(tab) {
-        if (tab === 'analyze') {
-            navAnalyze.classList.add('active');
-            navAnalyze.style.color = 'var(--color-text-inverse)';
-            navAnalyze.style.fontWeight = 'bold';
-            
-            navEvaluation.classList.remove('active');
-            navEvaluation.style.color = 'rgba(255,255,255,0.7)';
-            navEvaluation.style.fontWeight = 'normal';
-            
-            viewAnalyze.classList.remove('hidden');
-            viewEvaluation.classList.add('hidden');
-        } else {
-            navEvaluation.classList.add('active');
-            navEvaluation.style.color = 'var(--color-text-inverse)';
-            navEvaluation.style.fontWeight = 'bold';
-            
-            navAnalyze.classList.remove('active');
-            navAnalyze.style.color = 'rgba(255,255,255,0.7)';
-            navAnalyze.style.fontWeight = 'normal';
-            
-            viewEvaluation.classList.remove('hidden');
-            viewAnalyze.classList.add('hidden');
-        }
+    function switchTab(tabId) {
+        tabs.forEach(t => {
+            const nav = document.getElementById(`nav${t}`);
+            const view = document.getElementById(`view${t}`);
+            if (t.toLowerCase() === tabId.toLowerCase()) {
+                nav.classList.add('active');
+                nav.style.color = 'var(--color-text-inverse)';
+                nav.style.fontWeight = 'bold';
+                view.classList.remove('hidden');
+            } else {
+                nav.classList.remove('active');
+                nav.style.color = 'rgba(255,255,255,0.7)';
+                nav.style.fontWeight = 'normal';
+                view.classList.add('hidden');
+            }
+        });
     }
     
-    navAnalyze.addEventListener('click', (e) => { e.preventDefault(); switchTab('analyze'); });
-    navEvaluation.addEventListener('click', (e) => { e.preventDefault(); switchTab('evaluation'); });
+    tabs.forEach(t => {
+        document.getElementById(`nav${t}`).addEventListener('click', (e) => {
+            e.preventDefault();
+            switchTab(t);
+        });
+    });
+
+    // Batch Processing
+    const batchFileInput = document.getElementById('batchFileInput');
+    const batchProcessBtn = document.getElementById('batchProcessBtn');
+    const batchLoadingIndicator = document.getElementById('batchLoadingIndicator');
+    const batchProgress = document.getElementById('batchProgress');
+    const batchError = document.getElementById('batchError');
+    const batchResultsCard = document.getElementById('batchResultsCard');
+    const batchTableBody = document.getElementById('batchTableBody');
+    const exportBatchBtn = document.getElementById('exportBatchBtn');
+    let lastBatchResults = [];
+
+    batchProcessBtn.addEventListener('click', async () => {
+        const file = batchFileInput.files[0];
+        if (!file) {
+            batchError.textContent = "Please select an .mbox file.";
+            batchError.classList.remove('hidden');
+            return;
+        }
+
+        batchProcessBtn.disabled = true;
+        batchLoadingIndicator.classList.remove('hidden');
+        batchProgress.classList.remove('hidden');
+        batchError.classList.add('hidden');
+        batchResultsCard.classList.add('hidden');
+
+        try {
+            const text = await file.text();
+            const data = await processBatch(text);
+            lastBatchResults = data.results;
+            
+            batchTableBody.innerHTML = '';
+            lastBatchResults.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${defang(res.subject)}</td>
+                    <td>${defang(res.sender)}</td>
+                    <td>${res.score}</td>
+                    <td><span class="badge badge-${res.level.toLowerCase()}">${res.level}</span></td>
+                `;
+                batchTableBody.appendChild(tr);
+            });
+            batchResultsCard.classList.remove('hidden');
+        } catch (err) {
+            batchError.textContent = err.message;
+            batchError.classList.remove('hidden');
+        } finally {
+            batchProcessBtn.disabled = false;
+            batchLoadingIndicator.classList.add('hidden');
+            batchProgress.classList.add('hidden');
+        }
+    });
+
+    exportBatchBtn.addEventListener('click', () => {
+        if (!lastBatchResults || lastBatchResults.length === 0) return;
+        const blob = new Blob([JSON.stringify(lastBatchResults, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "batch_results.json";
+        a.click();
+        URL.revokeObjectURL(url);
+    });
 
     // Load Evaluation
     
@@ -196,4 +252,39 @@ document.addEventListener('DOMContentLoaded', () => {
         
         evalContent.classList.remove('hidden');
     }
+
+    // Robustness
+    const loadRobustnessBtn = document.getElementById('loadRobustnessBtn');
+    const robustnessTable = document.getElementById('robustnessTable');
+    const robustnessTableBody = document.getElementById('robustnessTableBody');
+
+    loadRobustnessBtn.addEventListener('click', async () => {
+        loadRobustnessBtn.textContent = 'Loading...';
+        loadRobustnessBtn.disabled = true;
+        robustnessTable.classList.add('hidden');
+        
+        try {
+            const data = await fetchRobustnessSummary();
+            robustnessTableBody.innerHTML = '';
+            
+            if (data.attacks) {
+                for (const [strategy, res] of Object.entries(data.attacks)) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${strategy}</strong></td>
+                        <td>${res.metrics.f1 ? res.metrics.f1.toFixed(4) : '-'}</td>
+                        <td style="color: var(--color-risk-high);">${res.degradation.recall_drop ? (res.degradation.recall_drop * 100).toFixed(2) + '%' : '-'}</td>
+                    `;
+                    robustnessTableBody.appendChild(tr);
+                }
+            }
+            robustnessTable.classList.remove('hidden');
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            loadRobustnessBtn.textContent = 'Load Robustness Results';
+            loadRobustnessBtn.disabled = false;
+        }
+    });
+
 });

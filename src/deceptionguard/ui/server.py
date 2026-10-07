@@ -95,6 +95,8 @@ class DeceptionGuardHandler(BaseHTTPRequestHandler):
 
         if parsed_path.path == "/api/v1/analyze":
             self._handle_analyze()
+        elif parsed_path.path == "/api/v1/batch":
+            self._handle_batch()
         else:
             self.send_error(404, "API Endpoint Not Found")
 
@@ -163,6 +165,61 @@ class DeceptionGuardHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logger.exception("Analysis failed")
+            self._send_json(500, {"error": str(e)})
+
+    def _handle_batch(self) -> None:
+        """Process an mbox file for batch analysis."""
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length > 50 * 1024 * 1024:  # 50MB limit
+                self.send_error(413, "Payload Too Large")
+                return
+
+            post_data = self.rfile.read(content_length)
+
+            import os
+            import tempfile
+
+            from deceptionguard.ingestion.parser import parse_mbox
+
+            # Save to temporary file to parse
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(post_data)
+                temp_path = f.name
+
+            try:
+                records = parse_mbox(temp_path)
+            finally:
+                os.unlink(temp_path)
+
+            results = []
+            for record in records:
+                try:
+                    graph = extract_intent_graph(record)
+                    evidence_list = detect_all(record)
+                    result = score_email(graph, evidence_list)
+
+                    if result.total_score >= 70:
+                        risk_level = "HIGH"
+                    elif result.total_score >= 40:
+                        risk_level = "MEDIUM"
+                    elif result.total_score > 0:
+                        risk_level = "LOW"
+                    else:
+                        risk_level = "MINIMAL"
+
+                    results.append({
+                        "score": result.total_score,
+                        "level": risk_level,
+                        "subject": record.subject or "(No Subject)",
+                        "sender": record.sender,
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to score record in batch: {e}")
+
+            self._send_json(200, {"results": results})
+        except Exception as e:
+            logger.exception("Batch analysis failed")
             self._send_json(500, {"error": str(e)})
 
     def _handle_results_get(self, path: str) -> None:
