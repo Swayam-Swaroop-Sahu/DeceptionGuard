@@ -34,7 +34,9 @@ DeceptionGuard is a local-first Python tool for analyzing emails and detecting p
 
 - **Robust Email Parsing**: Supports `.eml` and `.mbox` formats, robust handling of `multipart/alternative`, extracting URLs (anchor, href), attachments, and advanced headers (Authentication-Results, Received chain).
 - **Text Normalization**: Extracts hidden text (CSS-hidden attack signals), normalizes to NFKC, and detects Bidi/zero-width controls.
-- **Dual Detection**: ML baseline + LLM intent analysis
+- **Deterministic Evidence Layer**: Pure-Python, extensible detectors generating specific `Evidence` objects (e.g. `URL_IP_LITERAL`, `BRAND_TYPOSQUATTING`, `ATTACHMENT_EXECUTABLE`).
+- **Brand Lookalike Detection**: Built-in Damerau-Levenshtein typosquatting detection for high-value targets.
+- **Dual Detection**: ML baseline + Deterministic Evidence + LLM intent analysis
 - **Offline-First**: Works without API keys using heuristic fallback
 - **Configurable Risk Scoring**: TOML-based factor weights
 - **Comprehensive Evaluation**: Baseline vs pipeline comparison with subtype breakdown

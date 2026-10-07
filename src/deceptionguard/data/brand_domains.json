@@ -1,0 +1,18 @@
+[
+    {"brand": "PayPal", "domains": ["paypal.com", "paypal.co.uk", "paypal.ca"]},
+    {"brand": "Microsoft", "domains": ["microsoft.com", "office.com", "live.com", "outlook.com"]},
+    {"brand": "Google", "domains": ["google.com", "gmail.com", "youtube.com"]},
+    {"brand": "Apple", "domains": ["apple.com", "icloud.com"]},
+    {"brand": "Amazon", "domains": ["amazon.com", "amazon.co.uk"]},
+    {"brand": "Netflix", "domains": ["netflix.com"]},
+    {"brand": "Bank of America", "domains": ["bankofamerica.com", "bofa.com"]},
+    {"brand": "Chase", "domains": ["chase.com"]},
+    {"brand": "Wells Fargo", "domains": ["wellsfargo.com"]},
+    {"brand": "Facebook", "domains": ["facebook.com", "fb.com", "instagram.com", "meta.com"]},
+    {"brand": "Twitter", "domains": ["twitter.com", "x.com"]},
+    {"brand": "LinkedIn", "domains": ["linkedin.com"]},
+    {"brand": "DHL", "domains": ["dhl.com"]},
+    {"brand": "FedEx", "domains": ["fedex.com"]},
+    {"brand": "UPS", "domains": ["ups.com"]},
+    {"brand": "USPS", "domains": ["usps.com"]}
+]
