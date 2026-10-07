@@ -148,27 +148,50 @@ def extract_intent_graph(
         return empty_graph
 
     prompt = _build_prompt(record)
-
-    # Configure litellm based on the config
+    
+    # Configure provider based on the config
     import os
-    if llm_config.api_key:
-        os.environ["OPENAI_API_KEY"] = llm_config.api_key
-
-    # In a real setup, we might set api_base for standard openai compatible endpoints
-    # For now, litellm handles "gpt-4o-mini" gracefully if OPENAI_API_KEY is set.
+    api_key = llm_config.api_key or os.environ.get("OPENAI_API_KEY", "")
+    api_base = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
+    model = llm_config.model
+    
+    if not api_key and not os.environ.get("LLM_NO_KEY_REQUIRED"):
+        logger.warning("LLM API key missing and not marked as unrequired, using heuristic fallback")
+        fallback_graph = _fallback_extract(record)
+        if validate_graph(fallback_graph):
+            return fallback_graph
+        return empty_graph
 
     try:
-        import litellm
-        response = litellm.completion(
-            model=llm_config.model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-            temperature=0.1,
-            timeout=llm_config.timeout,
-            num_retries=llm_config.max_retries
+        import urllib.request
+        import urllib.error
+        import urllib.parse
+        
+        url = f"{api_base.rstrip('/')}/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1
+        }
+        
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST"
         )
-
-        content = response.choices[0].message.content
+        
+        with urllib.request.urlopen(req, timeout=llm_config.timeout) as response:
+            resp_body = response.read().decode("utf-8")
+            resp_data = json.loads(resp_body)
+            content = resp_data["choices"][0]["message"]["content"]
+            
         if content:
             graph = json.loads(content.strip())
             if validate_graph(graph):
