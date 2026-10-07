@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-10-07
+### Added
+- Phase 8 & 9: Paper Artifacts & Final Polish.
+- Reproducibility scripts (`scripts/reproduce.sh`, `scripts/reproduce.ps1`, `Makefile`) for one-click generation of evaluation metrics and adversarial robustness results.
+- Fixed dataclass mutation for adversarial robustness evaluation.
+
 ## [0.9.0] - 2026-10-07
 ### Added
 - Phase 7: Adversarial Robustness Suite.
