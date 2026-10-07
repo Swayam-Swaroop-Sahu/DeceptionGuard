@@ -1,4 +1,4 @@
-import { analyzeEmail } from './api.js';
+import { analyzeEmail, fetchEvaluationSummary } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyzeBtn');
@@ -102,4 +102,98 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingIndicator.classList.add('hidden');
         }
     });
+    
+    // Evaluation Tab Navigation
+    const navAnalyze = document.getElementById('navAnalyze');
+    const navEvaluation = document.getElementById('navEvaluation');
+    const viewAnalyze = document.getElementById('viewAnalyze');
+    const viewEvaluation = document.getElementById('viewEvaluation');
+    
+    function switchTab(tab) {
+        if (tab === 'analyze') {
+            navAnalyze.classList.add('active');
+            navAnalyze.style.color = 'var(--color-text-inverse)';
+            navAnalyze.style.fontWeight = 'bold';
+            
+            navEvaluation.classList.remove('active');
+            navEvaluation.style.color = 'rgba(255,255,255,0.7)';
+            navEvaluation.style.fontWeight = 'normal';
+            
+            viewAnalyze.classList.remove('hidden');
+            viewEvaluation.classList.add('hidden');
+        } else {
+            navEvaluation.classList.add('active');
+            navEvaluation.style.color = 'var(--color-text-inverse)';
+            navEvaluation.style.fontWeight = 'bold';
+            
+            navAnalyze.classList.remove('active');
+            navAnalyze.style.color = 'rgba(255,255,255,0.7)';
+            navAnalyze.style.fontWeight = 'normal';
+            
+            viewEvaluation.classList.remove('hidden');
+            viewAnalyze.classList.add('hidden');
+        }
+    }
+    
+    navAnalyze.addEventListener('click', (e) => { e.preventDefault(); switchTab('analyze'); });
+    navEvaluation.addEventListener('click', (e) => { e.preventDefault(); switchTab('evaluation'); });
+
+    // Load Evaluation
+    
+    const loadEvalBtn = document.getElementById('loadEvalBtn');
+    const evalError = document.getElementById('evalError');
+    const evalContent = document.getElementById('evalContent');
+    const evalTableBody = document.getElementById('evalTableBody');
+    const mcnemarResult = document.getElementById('mcnemarResult');
+    
+    loadEvalBtn.addEventListener('click', async () => {
+        evalError.classList.add('hidden');
+        evalContent.classList.add('hidden');
+        loadEvalBtn.textContent = 'Loading...';
+        loadEvalBtn.disabled = true;
+        
+        try {
+            const data = await fetchEvaluationSummary();
+            renderEvaluation(data);
+        } catch (err) {
+            evalError.textContent = err.message;
+            evalError.classList.remove('hidden');
+        } finally {
+            loadEvalBtn.textContent = 'Load results/summary.json';
+            loadEvalBtn.disabled = false;
+        }
+    });
+    
+    function renderEvaluation(data) {
+        evalTableBody.innerHTML = '';
+        
+        const formatCI = (mean, lower, upper) => {
+            if (mean === undefined) return '-';
+            return `${mean.toFixed(4)} <span class="text-muted" style="font-size: 0.75rem;">[${lower.toFixed(4)}, ${upper.toFixed(4)}]</span>`;
+        };
+        
+        ['baseline', 'evidence_only', 'graph_only', 'full_pipeline'].forEach(ablation => {
+            if (!data[ablation]) return;
+            const res = data[ablation];
+            const ci = res.confidence_intervals || {};
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${ablation}</strong></td>
+                <td>${formatCI(res.f1, ci.f1?.ci_lower, ci.f1?.ci_upper)}</td>
+                <td>${formatCI(res.roc_auc, ci.roc_auc?.ci_lower, ci.roc_auc?.ci_upper)}</td>
+                <td>${res.ece ? res.ece.toFixed(4) : '-'}</td>
+            `;
+            evalTableBody.appendChild(tr);
+        });
+        
+        if (data.mcnemar_baseline_vs_full !== undefined) {
+            const p = data.mcnemar_baseline_vs_full;
+            mcnemarResult.innerHTML = `p-value = ${p.toFixed(5)} ${p < 0.05 ? '<span class="badge badge-high">Significant</span>' : '<span class="badge badge-minimal">Not Significant</span>'}`;
+        } else {
+            mcnemarResult.textContent = 'N/A';
+        }
+        
+        evalContent.classList.remove('hidden');
+    }
 });
