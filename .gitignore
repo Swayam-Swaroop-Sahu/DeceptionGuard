@@ -29,6 +29,8 @@ data/raw/
 data/processed/*.csv
 !data/processed/placeholder_train.csv
 !data/processed/placeholder_test.csv
+datasets/
+results/
 
 # IDEs
 .vscode/

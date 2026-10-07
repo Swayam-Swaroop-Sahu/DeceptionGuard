@@ -1,7 +1,8 @@
 import pytest
-from src.intent_graph.schema import validate_graph, INTENT_GRAPH_SCHEMA
-from src.intent_graph.extractor import extract_intent_graph, _fallback_extract
-from src.ingestion.email_record import EmailRecord
+
+from deceptionguard.ingestion.email_record import EmailRecord
+from deceptionguard.intent_graph.extractor import _fallback_extract, extract_intent_graph
+from deceptionguard.intent_graph.schema import validate_graph
 
 
 def test_validate_graph_valid():
@@ -121,7 +122,7 @@ def test_extract_intent_graph_with_fallback():
 
     # Should return a valid graph (via fallback)
     assert validate_graph(graph) is True
-    
+
     # Check urgency signals (case-insensitive)
     urgency_lower = [s.lower() for s in graph["urgency_signals"]]
     assert "urgent" in urgency_lower

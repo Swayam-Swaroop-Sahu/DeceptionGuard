@@ -1,11 +1,23 @@
+"""Risk engine scorer — deterministic factor-based scoring.
+
+Loads factor weights from TOML (stdlib tomllib) and computes a
+risk score from an intent graph.
+"""
+
+from __future__ import annotations
+
+import tomllib
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
-import yaml
 from pathlib import Path
+from typing import Any
+
+from ..config import DEFAULT_FACTOR_WEIGHTS
 
 
 @dataclass
 class FactorContribution:
+    """A single factor's contribution to the risk score."""
+
     name: str
     weight: int
     contribution: int
@@ -13,37 +25,56 @@ class FactorContribution:
 
 @dataclass
 class RiskResult:
+    """Result of risk scoring: total score and per-factor breakdown."""
+
     total_score: int
-    factors: List[FactorContribution]
+    factors: list[FactorContribution]
 
 
-def load_weights() -> Dict[str, int]:
-    """Load factor weights from weights.yaml."""
-    with open(Path(__file__).parent / "weights.yaml") as f:
-        return yaml.safe_load(f)["factor_weights"]
+def load_weights(path: Path | str | None = None) -> dict[str, int]:
+    """Load factor weights from weights.toml or return defaults.
+
+    Args:
+        path: Optional explicit path to a TOML file with a [factor_weights] section.
+              If None, loads from the bundled weights.toml next to this file.
+
+    Returns:
+        Dict mapping factor names to integer weights.
+    """
+    if path is None:
+        path = Path(__file__).parent / "weights.toml"
+
+    path = Path(path)
+    if path.is_file():
+        with open(path, "rb") as f:
+            data = tomllib.load(f)
+        if "factor_weights" in data:
+            return data["factor_weights"]
+
+    return dict(DEFAULT_FACTOR_WEIGHTS)
 
 
-def _check_identity_mismatch(graph: Dict) -> bool:
+def _check_identity_mismatch(graph: dict[str, Any]) -> bool:
     """Check if claimed identity doesn't match sender domain."""
     claimed = graph.get("claimed_identity")
     if not claimed:
         return False
-    
+
     # Simple check: if claimed identity mentions known brands but sender is suspicious
     suspicious_keywords = ["security", "support", "admin", "billing", "verify", "account"]
     claimed_lower = claimed.lower()
     return any(kw in claimed_lower for kw in suspicious_keywords)
 
 
-def _check_urgency_high(graph: Dict) -> bool:
+def _check_urgency_high(graph: dict[str, Any]) -> bool:
     """Check for high urgency signals."""
     urgency_signals = graph.get("urgency_signals", [])
     high_urgency_keywords = [
         "urgent", "immediate", "now", "asap", "emergency", "critical",
         "24 hours", "24h", "hours", "deadline", "expire", "suspend",
-        "closure", "terminate", "act now", "hurry", "limited time"
+        "closure", "terminate", "act now", "hurry", "limited time",
     ]
-    
+
     for signal in urgency_signals:
         signal_lower = signal.lower()
         if any(kw in signal_lower for kw in high_urgency_keywords):
@@ -51,7 +82,7 @@ def _check_urgency_high(graph: Dict) -> bool:
     return False
 
 
-def _check_authority_spoof(graph: Dict) -> bool:
+def _check_authority_spoof(graph: dict[str, Any]) -> bool:
     """Check for authority spoofing signals."""
     authority_signals = graph.get("authority_signals", [])
     authority_keywords = [
@@ -59,9 +90,9 @@ def _check_authority_spoof(graph: Dict) -> bool:
         "admin", "administrator", "bank", "irs", "government",
         "microsoft", "apple", "google", "amazon", "paypal", "linkedin",
         "facebook", "instagram", "twitter", "github", "gitlab",
-        "security", "compliance", "legal", "hr", "human resources"
+        "security", "compliance", "legal", "hr", "human resources",
     ]
-    
+
     for signal in authority_signals:
         signal_lower = signal.lower()
         if any(kw in signal_lower for kw in authority_keywords):
@@ -69,20 +100,20 @@ def _check_authority_spoof(graph: Dict) -> bool:
     return False
 
 
-def _check_payload_links(graph: Dict) -> bool:
+def _check_payload_links(graph: dict[str, Any]) -> bool:
     """Check for suspicious payload links."""
     payload_targets = graph.get("payload_targets", [])
-    
+
     if not payload_targets:
         return False
-    
+
     # Check for suspicious patterns in links
     suspicious_patterns = [
         "verify", "login", "signin", "account", "secure", "update",
         "confirm", "validate", "authenticate", "reset", "recover",
-        "unlock", "restore", "activate", "verify-account", "secure-"
+        "unlock", "restore", "activate", "verify-account", "secure-",
     ]
-    
+
     for target in payload_targets:
         target_lower = target.lower()
         if any(pattern in target_lower for pattern in suspicious_patterns):
@@ -90,117 +121,88 @@ def _check_payload_links(graph: Dict) -> bool:
     return False
 
 
-def _check_action_request(graph: Dict) -> bool:
+def _check_action_request(graph: dict[str, Any]) -> bool:
     """Check for explicit action requests."""
     requested_action = graph.get("requested_action")
     if not requested_action:
         return False
-    
+
     action_keywords = [
         "click", "verify", "confirm", "update", "provide", "enter",
         "submit", "login", "sign in", "download", "open", "visit",
-        "go to", "follow", "access", "reset", "change", "confirm"
+        "go to", "follow", "access", "reset", "change", "confirm",
     ]
-    
+
     action_lower = requested_action.lower()
     return any(kw in action_lower for kw in action_keywords)
 
 
-def score_graph(graph: Dict) -> RiskResult:
+def score_graph(graph: dict[str, Any], weights_path: Path | str | None = None) -> RiskResult:
+    """Compute risk score from intent graph.
+
+    Args:
+        graph: Intent graph dict with the standard schema keys.
+        weights_path: Optional path to weights TOML file.
+
+    Returns:
+        RiskResult with deterministic score 0-100 and factor breakdown.
     """
-    Compute risk score from intent graph.
-    
-    Returns deterministic score 0-100 with factor breakdown.
-    """
-    weights = load_weights()
-    factors = []
-    
+    weights = load_weights(weights_path)
+    factors: list[FactorContribution] = []
+
     # Factor 1: Claimed Identity Mismatch
     identity_mismatch = _check_identity_mismatch(graph)
-    identity_contribution = weights["claimed_identity_mismatch"] if identity_mismatch else 0
+    identity_weight = weights.get("claimed_identity_mismatch", 25)
+    identity_contribution = identity_weight if identity_mismatch else 0
     factors.append(FactorContribution(
         name="claimed_identity_mismatch",
-        weight=weights["claimed_identity_mismatch"],
-        contribution=identity_contribution
+        weight=identity_weight,
+        contribution=identity_contribution,
     ))
-    
+
     # Factor 2: Urgency High
     urgency_high = _check_urgency_high(graph)
-    urgency_contribution = weights["urgency_high"] if urgency_high else 0
+    urgency_weight = weights.get("urgency_high", 30)
+    urgency_contribution = urgency_weight if urgency_high else 0
     factors.append(FactorContribution(
         name="urgency_high",
-        weight=weights["urgency_high"],
-        contribution=urgency_contribution
+        weight=urgency_weight,
+        contribution=urgency_contribution,
     ))
-    
+
     # Factor 3: Authority Spoof
     authority_spoof = _check_authority_spoof(graph)
-    authority_contribution = weights["authority_spoof"] if authority_spoof else 0
+    authority_weight = weights.get("authority_spoof", 20)
+    authority_contribution = authority_weight if authority_spoof else 0
     factors.append(FactorContribution(
         name="authority_spoof",
-        weight=weights["authority_spoof"],
-        contribution=authority_contribution
+        weight=authority_weight,
+        contribution=authority_contribution,
     ))
-    
+
     # Factor 4: Payload Links
     payload_links = _check_payload_links(graph)
-    payload_contribution = weights["payload_links"] if payload_links else 0
+    payload_weight = weights.get("payload_links", 15)
+    payload_contribution = payload_weight if payload_links else 0
     factors.append(FactorContribution(
         name="payload_links",
-        weight=weights["payload_links"],
-        contribution=payload_contribution
+        weight=payload_weight,
+        contribution=payload_contribution,
     ))
-    
+
     # Factor 5: Action Request
     action_request = _check_action_request(graph)
-    action_contribution = weights["action_request"] if action_request else 0
+    action_weight = weights.get("action_request", 10)
+    action_contribution = action_weight if action_request else 0
     factors.append(FactorContribution(
         name="action_request",
-        weight=weights["action_request"],
-        contribution=action_contribution
+        weight=action_weight,
+        contribution=action_contribution,
     ))
-    
+
     total_score = sum(f.contribution for f in factors)
-    
+
     return RiskResult(
         total_score=min(total_score, 100),  # Cap at 100
-        factors=factors
+        factors=factors,
     )
-
-
-if __name__ == "__main__":
-    # Test with sample graphs
-    test_graphs = [
-        # Phishing-like graph
-        {
-            "claimed_identity": "Security Team",
-            "requested_action": "Click here to verify your account",
-            "urgency_signals": ["urgent", "immediate action required", "24 hours"],
-            "authority_signals": ["security department", "automated message"],
-            "payload_targets": ["https://verify-account-now.malicious-site.com/login"]
-        },
-        # Legitimate graph
-        {
-            "claimed_identity": "John Doe, Senior Analyst",
-            "requested_action": "Please review the attached report",
-            "urgency_signals": [],
-            "authority_signals": [],
-            "payload_targets": ["https://company.com/reports/q4-2023"]
-        },
-        # Empty graph
-        {
-            "claimed_identity": None,
-            "requested_action": None,
-            "urgency_signals": [],
-            "authority_signals": [],
-            "payload_targets": []
-        }
-    ]
-    
-    for i, graph in enumerate(test_graphs):
-        result = score_graph(graph)
-        print(f"\nTest Graph {i + 1}:")
-        print(f"  Total Score: {result.total_score}/100")
-        for f in result.factors:
-            status = "[+]" if f.contribution > 0 else "[-]"
-            print(f"  {status} {f.name}: {f.contribution}/{f.weight}")

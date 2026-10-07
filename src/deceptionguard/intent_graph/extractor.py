@@ -1,24 +1,34 @@
+"""Intent graph extractor — LLM-based and heuristic extraction.
+
+Uses urllib (stdlib) to call any OpenAI-compatible endpoint.
+Falls back to heuristic keyword-based extraction when no LLM is configured.
+No openai SDK dependency.
+"""
+
+from __future__ import annotations
+
 import json
 import logging
-import os
 import time
-from typing import Dict, Optional
+import urllib.error
+import urllib.request
+from typing import Any
+
+from ..config import LLMConfig, load_config
 from ..ingestion.email_record import EmailRecord
-from .schema import validate_graph, INTENT_GRAPH_SCHEMA
+from .schema import INTENT_GRAPH_SCHEMA, validate_graph
 
 logger = logging.getLogger(__name__)
 
-# NVIDIA API Configuration - read from environment (loaded via python-dotenv)
-NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "").strip()
-NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1").strip()
-NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "openai/gpt-oss-20b").strip()
 
+# ---------------------------------------------------------------------------
+# Heuristic (offline) extraction
+# ---------------------------------------------------------------------------
 
-# Fallback: Local heuristic-based extraction (no API needed)
-def _fallback_extract(record: EmailRecord) -> Dict:
-    """
-    Fallback extraction using keyword-based heuristics.
-    Used when LLM API is unavailable or fails.
+def _fallback_extract(record: EmailRecord) -> dict[str, Any]:
+    """Fallback extraction using keyword-based heuristics.
+
+    Used when LLM API is unavailable or not configured.
     """
     body_lower = record.body_text.lower()
     subject_lower = (record.subject or "").lower()
@@ -29,7 +39,7 @@ def _fallback_extract(record: EmailRecord) -> Dict:
         "urgent", "immediate", "asap", "emergency", "critical",
         "24 hours", "24h", "hours left", "deadline", "expire",
         "suspend", "closure", "terminate", "act now", "hurry",
-        "limited time", "expires today", "final notice", "last chance"
+        "limited time", "expires today", "final notice", "last chance",
     ]
 
     # Authority keywords
@@ -39,7 +49,7 @@ def _fallback_extract(record: EmailRecord) -> Dict:
         "microsoft", "apple", "google", "amazon", "paypal", "linkedin",
         "facebook", "instagram", "twitter", "github", "gitlab",
         "security", "compliance", "legal", "hr", "human resources",
-        "verification", "account team", "billing", "fraud prevention"
+        "verification", "account team", "billing", "fraud prevention",
     ]
 
     # Action keywords
@@ -47,96 +57,99 @@ def _fallback_extract(record: EmailRecord) -> Dict:
         "click", "verify", "confirm", "update", "provide", "enter",
         "submit", "login", "sign in", "download", "open", "visit",
         "go to", "follow", "access", "reset", "change", "validate",
-        "authenticate", "unlock", "restore", "activate"
+        "authenticate", "unlock", "restore", "activate",
     ]
 
     # Identity patterns
     identity_patterns = [
         "security team", "support team", "admin team", "it team",
         "help desk", "customer service", "verification team",
-        "fraud team", "compliance team", "billing department"
+        "fraud team", "compliance team", "billing department",
     ]
 
     urgency_signals = [kw for kw in urgency_keywords if kw in text]
     authority_signals = [kw for kw in authority_keywords if kw in text]
 
     # Find claimed identity
-    claimed_identity = None
+    claimed_identity: str | None = None
     for pattern in identity_patterns:
         if pattern in text:
             claimed_identity = pattern.title()
             break
 
     # Find requested action
-    requested_action = None
+    requested_action: str | None = None
     for kw in action_keywords:
         if kw in text:
             idx = text.find(kw)
-            context = text[max(0, idx - 20):idx + 50].strip()
+            context = text[max(0, idx - 20) : idx + 50].strip()
             requested_action = context
             break
 
     # Payload targets are the links
-    payload_targets = record.links if record.links else []
+    payload_targets = list(record.links) if record.links else []
 
     return {
         "claimed_identity": claimed_identity,
         "requested_action": requested_action,
         "urgency_signals": urgency_signals,
         "authority_signals": authority_signals,
-        "payload_targets": payload_targets
+        "payload_targets": payload_targets,
     }
 
 
-def _call_nvidia_llm(prompt: str, max_retries: int = 3, timeout: int = 30) -> Optional[str]:
-    """
-    Call NVIDIA hosted LLM API with retry logic and timeout.
+# ---------------------------------------------------------------------------
+# LLM extraction via urllib (OpenAI-compatible API)
+# ---------------------------------------------------------------------------
+
+def _call_llm(
+    prompt: str,
+    llm_config: LLMConfig,
+) -> str | None:
+    """Call an OpenAI-compatible LLM endpoint using urllib.
 
     Args:
-        prompt: The prompt to send to the LLM
-        max_retries: Maximum number of retry attempts
-        timeout: Request timeout in seconds
+        prompt: The prompt to send to the LLM.
+        llm_config: LLM configuration with endpoint details.
 
     Returns:
-        LLM response as string, or None if unavailable
+        LLM response content as string, or None if unavailable.
     """
-    try:
-        from openai import OpenAI
-    except ImportError:
-        logger.warning("openai package not installed. Install with: pip install openai")
+    if not llm_config.is_configured:
         return None
 
-    client = OpenAI(
-        base_url=NVIDIA_BASE_URL,
-        api_key=NVIDIA_API_KEY
-    )
+    url = f"{llm_config.base_url.rstrip('/')}/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {llm_config.api_key}",
+    }
+    payload = json.dumps({
+        "model": llm_config.model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.1,
+        "top_p": 0.9,
+        "max_tokens": 2048,
+        "stream": False,
+    }).encode("utf-8")
 
-    for attempt in range(max_retries):
+    for attempt in range(llm_config.max_retries):
         try:
-            completion = client.chat.completions.create(
-                model=NVIDIA_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                top_p=0.9,
-                max_tokens=2048,
-                stream=False
-            )
+            req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=llm_config.timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"]
 
-            message = completion.choices[0].message
-            reasoning = getattr(message, "reasoning_content", None)
-            if reasoning:
-                logger.debug(f"LLM reasoning: {reasoning[:200]}...")
-
-            return message.content
-
-        except Exception as e:
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError, KeyError) as e:
             logger.warning(
-                f"NVIDIA LLM call failed (attempt {attempt + 1}/{max_retries}): {e}"
+                "LLM call failed (attempt %d/%d): %s",
+                attempt + 1,
+                llm_config.max_retries,
+                e,
             )
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)  # Exponential backoff
+            if attempt < llm_config.max_retries - 1:
+                time.sleep(2**attempt)  # Exponential backoff
 
-    logger.error(f"NVIDIA LLM call failed after {max_retries} attempts")
+    logger.error("LLM call failed after %d attempts", llm_config.max_retries)
     return None
 
 
@@ -167,27 +180,42 @@ Return ONLY valid JSON matching this schema:
 {json.dumps(INTENT_GRAPH_SCHEMA, indent=2)}"""
 
 
-def extract_intent_graph(record: EmailRecord) -> Dict:
-    """
-    Extract intent graph from an email record using LLM with fallback.
+def extract_intent_graph(
+    record: EmailRecord,
+    llm_config: LLMConfig | None = None,
+) -> dict[str, Any]:
+    """Extract intent graph from an email record.
 
     Priority:
-    1. NVIDIA hosted LLM (gpt-oss-20b)
-    2. Local heuristic fallback
+    1. LLM extraction (if configured)
+    2. Heuristic fallback (always available)
 
-    Returns validated intent graph matching schema.
+    Args:
+        record: Parsed email record.
+        llm_config: LLM configuration. If None, loads from config.
+
+    Returns:
+        Validated intent graph dict.
     """
-    empty_graph = {
+    empty_graph: dict[str, Any] = {
         "claimed_identity": None,
         "requested_action": None,
         "urgency_signals": [],
         "authority_signals": [],
-        "payload_targets": []
+        "payload_targets": [],
     }
 
+    # Resolve LLM config
+    if llm_config is None:
+        try:
+            cfg = load_config(load_env=False)
+            llm_config = cfg.llm
+        except Exception:
+            llm_config = LLMConfig()
+
     # If no API key configured, skip LLM entirely and use fallback
-    if not NVIDIA_API_KEY:
-        logger.info("No NVIDIA_API_KEY configured, using heuristic fallback")
+    if not llm_config.is_configured:
+        logger.info("No LLM API key configured, using heuristic fallback")
         fallback_graph = _fallback_extract(record)
         if validate_graph(fallback_graph):
             return fallback_graph
@@ -197,8 +225,8 @@ def extract_intent_graph(record: EmailRecord) -> Dict:
     # Build prompt
     prompt = _build_prompt(record)
 
-    # Try NVIDIA LLM
-    response = _call_nvidia_llm(prompt)
+    # Try LLM
+    response = _call_llm(prompt, llm_config)
 
     if response:
         try:
@@ -211,14 +239,14 @@ def extract_intent_graph(record: EmailRecord) -> Dict:
             graph = json.loads(cleaned_response.strip())
 
             if validate_graph(graph):
-                logger.info("Successfully extracted intent graph via NVIDIA LLM")
+                logger.info("Successfully extracted intent graph via LLM")
                 return graph
             else:
-                logger.warning(f"LLM returned invalid graph schema: {graph}")
+                logger.warning("LLM returned invalid graph schema: %s", graph)
         except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse LLM response as JSON: {e}")
+            logger.warning("Failed to parse LLM response as JSON: %s", e)
         except Exception as e:
-            logger.warning(f"Unexpected error processing LLM response: {e}")
+            logger.warning("Unexpected error processing LLM response: %s", e)
 
     # Fallback to heuristic extraction
     logger.info("Falling back to heuristic-based extraction")

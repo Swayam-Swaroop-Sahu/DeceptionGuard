@@ -1,0 +1,11 @@
+# DeceptionGuard Risk Engine — Factor Weights (Expert Baseline)
+# Version: 1.0.0
+# These are hand-set weights used as the "expert" baseline configuration.
+# Learned weights are produced by `dg train-weights` and stored separately.
+
+[factor_weights]
+claimed_identity_mismatch = 25
+urgency_high = 30
+authority_spoof = 20
+payload_links = 15
+action_request = 10
