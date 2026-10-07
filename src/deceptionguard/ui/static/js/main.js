@@ -5,13 +5,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('emailInput');
     const loadingIndicator = document.getElementById('loadingIndicator');
     const errorMsg = document.getElementById('errorMsg');
-    
+
     const resultsCard = document.getElementById('resultsCard');
     const emailViewCard = document.getElementById('emailViewCard');
-    
+
     const riskScore = document.getElementById('riskScore');
     const riskBadge = document.getElementById('riskBadge');
     const riskDonutFill = document.getElementById('riskDonutFill');
+    const riskRecommendation = document.getElementById('riskRecommendation');
     const factorWaterfall = document.getElementById('factorWaterfall');
     const evidenceTableBody = document.getElementById('evidenceTableBody');
     const intentGraphGrid = document.getElementById('intentGraphGrid');
@@ -21,9 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return '';
         // Defang URLs and sanitize HTML by replacing < and >
         return text.replace(/http/gi, 'hxxp')
-                   .replace(/\./g, '[.]')
-                   .replace(/</g, '&lt;')
-                   .replace(/>/g, '&gt;');
+            .replace(/\./g, '[.]')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     function renderResults(data) {
@@ -34,20 +35,34 @@ document.addEventListener('DOMContentLoaded', () => {
         riskScore.textContent = data.score;
         riskBadge.textContent = data.level;
         riskBadge.className = `badge badge-${data.level.toLowerCase()}`;
-        
+
         // Update Donut
         const maxDash = 339.292;
         const offset = maxDash - (Math.min(data.score, 100) / 100) * maxDash;
         setTimeout(() => {
             riskDonutFill.style.strokeDashoffset = offset;
-            
+
             let strokeColor = 'var(--color-risk-low)';
             if (data.level === 'MEDIUM') strokeColor = 'var(--color-risk-medium)';
             else if (data.level === 'HIGH' || data.level === 'CRITICAL') strokeColor = 'var(--color-risk-high)';
             else if (data.level === 'MINIMAL') strokeColor = 'var(--color-risk-minimal)';
-            
+
             riskDonutFill.style.stroke = strokeColor;
+            if (riskRecommendation) {
+                riskRecommendation.style.borderLeftColor = strokeColor;
+            }
         }, 50);
+
+        if (riskRecommendation) {
+            riskRecommendation.classList.remove('hidden');
+            if (data.level === 'CRITICAL' || data.level === 'HIGH') {
+                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-high);">⚠️ <strong>CAUTION:</strong> High risk detected! Do not click any links or download attachments. Report to IT immediately.</span>`;
+            } else if (data.level === 'MEDIUM') {
+                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-medium);">🤔 <strong>SUSPICIOUS:</strong> Proceed with caution. Verify the sender's identity before taking any requested actions.</span>`;
+            } else {
+                riskRecommendation.innerHTML = `<span style="color: var(--color-risk-minimal);">✅ <strong>SAFE:</strong> No significant threats detected. It appears safe to interact with this email.</span>`;
+            }
+        }
 
         // Factor Waterfall
         factorWaterfall.innerHTML = '';
@@ -57,13 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
             data.factors.forEach(f => {
                 const bar = document.createElement('div');
                 bar.className = 'factor-bar';
-                
+
                 const fill = document.createElement('div');
                 fill.className = `factor-fill ${f.category}`;
                 // relative width out of 100 max
                 fill.style.width = `${f.contribution}%`;
                 fill.textContent = `${f.name} (+${f.contribution})`;
-                
+
                 bar.appendChild(fill);
                 factorWaterfall.appendChild(bar);
             });
@@ -103,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const importantKeys = ['urgency_level', 'tone', 'requested_actions', 'financial_request', 'suspicious_links_present'];
-            
+
             importantKeys.forEach(key => {
                 if (data.graph[key] !== undefined) {
                     const card = document.createElement('div');
@@ -115,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     intentGraphGrid.appendChild(card);
                 }
             });
-            
+
             // Add any remaining keys
             Object.keys(data.graph).forEach(key => {
                 if (!importantKeys.includes(key) && typeof data.graph[key] !== 'object') {
@@ -134,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Sanitized Email
         emailContent.innerHTML = `<strong>Sender:</strong> ${defang(data.record.sender)}<br>` +
-                                 `<strong>Subject:</strong> ${defang(data.record.subject)}<br><br>` +
-                                 `${defang(data.record.body_text)}`;
+            `<strong>Subject:</strong> ${defang(data.record.subject)}<br><br>` +
+            `${defang(data.record.body_text)}`;
     }
 
     analyzeBtn.addEventListener('click', async () => {
@@ -145,9 +160,12 @@ document.addEventListener('DOMContentLoaded', () => {
         analyzeBtn.disabled = true;
         loadingIndicator.classList.remove('hidden');
         errorMsg.classList.add('hidden');
-        
+        if (riskRecommendation) {
+            riskRecommendation.classList.add('hidden');
+        }
+
         // Reset donut state
-        if(riskDonutFill) {
+        if (riskDonutFill) {
             riskDonutFill.style.strokeDashoffset = 339.292;
         }
 
@@ -165,10 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingIndicator.classList.add('hidden');
         }
     });
-    
+
     // Tab Navigation
     const tabs = ['Overview', 'Analyze', 'Batch', 'Evaluation', 'Robustness', 'Methodology', 'Settings'];
-    
+
     function switchTab(tabId) {
         tabs.forEach(t => {
             const nav = document.getElementById(`nav${t}`);
@@ -186,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     tabs.forEach(t => {
         document.getElementById(`nav${t}`).addEventListener('click', (e) => {
             e.preventDefault();
@@ -223,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = await file.text();
             const data = await processBatch(text);
             lastBatchResults = data.results;
-            
+
             batchTableBody.innerHTML = '';
             lastBatchResults.forEach(res => {
                 const tr = document.createElement('tr');
@@ -248,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     exportBatchBtn.addEventListener('click', () => {
         if (!lastBatchResults || lastBatchResults.length === 0) return;
-        const blob = new Blob([JSON.stringify(lastBatchResults, null, 2)], {type: "application/json"});
+        const blob = new Blob([JSON.stringify(lastBatchResults, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -258,19 +276,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load Evaluation
-    
+
     const loadEvalBtn = document.getElementById('loadEvalBtn');
     const evalError = document.getElementById('evalError');
     const evalContent = document.getElementById('evalContent');
     const evalTableBody = document.getElementById('evalTableBody');
     const mcnemarResult = document.getElementById('mcnemarResult');
-    
+
     loadEvalBtn.addEventListener('click', async () => {
         evalError.classList.add('hidden');
         evalContent.classList.add('hidden');
         loadEvalBtn.textContent = 'Loading...';
         loadEvalBtn.disabled = true;
-        
+
         try {
             const data = await fetchEvaluationSummary();
             renderEvaluation(data);
@@ -282,20 +300,20 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEvalBtn.disabled = false;
         }
     });
-    
+
     function renderEvaluation(data) {
         evalTableBody.innerHTML = '';
-        
+
         const formatCI = (mean, lower, upper) => {
             if (mean === undefined) return '-';
             return `${mean.toFixed(4)} <span class="text-muted" style="font-size: 0.75rem;">[${lower.toFixed(4)}, ${upper.toFixed(4)}]</span>`;
         };
-        
+
         ['baseline', 'evidence_only', 'graph_only', 'full_pipeline'].forEach(ablation => {
             if (!data[ablation]) return;
             const res = data[ablation];
             const ci = res.confidence_intervals || {};
-            
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${ablation}</strong></td>
@@ -305,14 +323,14 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             evalTableBody.appendChild(tr);
         });
-        
+
         if (data.mcnemar_baseline_vs_full !== undefined) {
             const p = data.mcnemar_baseline_vs_full;
             mcnemarResult.innerHTML = `p-value = ${p.toFixed(5)} ${p < 0.05 ? '<span class="badge badge-high">Significant</span>' : '<span class="badge badge-minimal">Not Significant</span>'}`;
         } else {
             mcnemarResult.textContent = 'N/A';
         }
-        
+
         evalContent.classList.remove('hidden');
     }
 
@@ -325,11 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loadRobustnessBtn.textContent = 'Loading...';
         loadRobustnessBtn.disabled = true;
         robustnessTable.classList.add('hidden');
-        
+
         try {
             const data = await fetchRobustnessSummary();
             robustnessTableBody.innerHTML = '';
-            
+
             if (data.attacks) {
                 for (const [strategy, res] of Object.entries(data.attacks)) {
                     const tr = document.createElement('tr');
