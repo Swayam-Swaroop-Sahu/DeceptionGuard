@@ -59,11 +59,21 @@ pip install -r requirements.txt
 
 ### Configuration (Optional)
 
-For LLM-powered intent extraction, set the NVIDIA API key:
+For LLM-powered intent extraction, copy the example configuration file and add your NVIDIA API key:
 
 ```bash
-export NVIDIA_API_KEY="<Enter API Key>"
+# Copy the example file
+cp .env.example .env
+
+# Edit .env and add your NVIDIA API key (get one from https://build.nvidia.com/)
+# NVIDIA_API_KEY=your_key_here
+# NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1  # optional, defaults to this
+# NVIDIA_MODEL=openai/gpt-oss-20b                     # optional, defaults to this
 ```
+
+The `.env` file is gitignored and will not be committed. The app automatically loads it via `python-dotenv` on startup.
+
+> **Note:** Without an API key, DeceptionGuard runs fully offline using the heuristic fallback for intent extraction.
 
 ## Usage
 

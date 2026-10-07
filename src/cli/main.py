@@ -1,6 +1,9 @@
 import argparse
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env before any other imports that need env vars
 
 
 def scan_email(file_path: str):
