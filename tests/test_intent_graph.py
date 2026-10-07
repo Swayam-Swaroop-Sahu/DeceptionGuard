@@ -85,13 +85,10 @@ def test_fallback_extract_legitimate():
     assert validate_graph(graph) is True
 
 import sys
-
-# Mock litellm entirely before any function runs it
-mock_litellm = MagicMock()
-sys.modules['litellm'] = mock_litellm
+from unittest.mock import MagicMock, patch
 
 def test_extract_intent_graph_llm():
-    """Test extract_intent_graph uses litellm."""
+    """Test extract_intent_graph uses urllib.request."""
     record = EmailRecord(
         sender="test@example.com",
         reply_to=None,
@@ -104,19 +101,17 @@ def test_extract_intent_graph_llm():
     )
 
     mock_resp = MagicMock()
-    mock_resp.choices = [MagicMock()]
-    mock_resp.choices[0].message.content = '{"urgency_pressure": true, "financial_request": false, "action_requested": "click", "deception_tone": "neutral", "trust_abuse": null}'
-
-    # Reset mock and assign return value
-    mock_litellm.completion.reset_mock()
-    mock_litellm.completion.return_value = mock_resp
-
+    mock_resp.read.return_value = b'{"choices": [{"message": {"content": "{\\"urgency_pressure\\": true, \\"financial_request\\": false, \\"action_requested\\": \\"click\\", \\"deception_tone\\": \\"neutral\\", \\"trust_abuse\\": null}"}}]}'
+    
     config = LLMConfig(api_key="sk-test", model="gpt-4o-mini")
-    graph = extract_intent_graph(record, llm_config=config)
+    
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+        graph = extract_intent_graph(record, llm_config=config)
 
     assert graph["urgency_pressure"] is True
     assert graph["action_requested"] == "click"
-    mock_litellm.completion.assert_called_once()
+    mock_urlopen.assert_called_once()
 
 def test_extract_intent_graph_llm_failure():
     """Test extract_intent_graph falls back when LLM fails."""
@@ -131,11 +126,11 @@ def test_extract_intent_graph_llm_failure():
         attachments=[]
     )
 
-    mock_litellm.completion.reset_mock()
-    mock_litellm.completion.side_effect = Exception("API Error")
-
     config = LLMConfig(api_key="sk-test", model="gpt-4o-mini")
-    graph = extract_intent_graph(record, llm_config=config)
+    
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        mock_urlopen.side_effect = Exception("API Error")
+        graph = extract_intent_graph(record, llm_config=config)
 
     # Should fall back to heuristic
     assert graph["urgency_pressure"] is True
