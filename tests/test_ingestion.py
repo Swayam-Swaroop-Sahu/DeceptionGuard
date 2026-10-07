@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from src.ingestion.parser import parse_eml, parse_mbox
+from src.ingestion.parser import parse_eml, parse_mbox, parse_eml_string, ParseError
 from src.ingestion.email_record import EmailRecord
 
 
@@ -65,6 +65,106 @@ def test_parse_mbox():
     assert len(records[1].links) == 1
     assert len(records[2].links) == 1
     assert len(records[3].links) == 1
+
+
+class TestParseEmlString:
+    """Tests for parse_eml_string function."""
+    
+    def test_parse_eml_string_normal(self):
+        """Test parsing a normal email from string."""
+        raw = """From: sender@example.com
+To: recipient@example.com
+Subject: Test Subject
+Date: Mon, 1 Jan 2024 12:00:00 +0000
+
+Hello world, this is a test email.
+"""
+        record = parse_eml_string(raw)
+        
+        assert isinstance(record, EmailRecord)
+        assert record.sender == "sender@example.com"
+        assert record.subject == "Test Subject"
+        assert "test email" in record.body_text.lower()
+        assert record.links == []
+        assert record.attachments == []
+    
+    def test_parse_eml_string_with_links(self):
+        """Test parsing email with links in body."""
+        raw = """From: sender@example.com
+Subject: Check this out
+
+Visit https://example.com and https://test.com/page
+"""
+        record = parse_eml_string(raw)
+        
+        assert len(record.links) == 2
+        assert "https://example.com" in record.links
+        assert "https://test.com/page" in record.links
+    
+    def test_parse_eml_string_no_body(self):
+        """Test parsing email with no body text."""
+        raw = """From: sender@example.com
+Subject: Empty body
+
+"""
+        record = parse_eml_string(raw)
+        
+        assert isinstance(record, EmailRecord)
+        assert record.sender == "sender@example.com"
+        assert record.subject == "Empty body"
+        assert record.body_text == ""
+        assert record.links == []
+    
+    def test_parse_eml_string_missing_from_raises(self):
+        """Test that missing From header raises ParseError."""
+        raw = """Subject: No sender
+
+Body text here.
+"""
+        with pytest.raises(ParseError, match="Missing required 'From' header"):
+            parse_eml_string(raw)
+    
+    def test_parse_eml_string_empty_input_raises(self):
+        """Test that empty input raises ParseError."""
+        with pytest.raises(ParseError, match="Empty input"):
+            parse_eml_string("")
+        
+        with pytest.raises(ParseError, match="Empty input"):
+            parse_eml_string("   \n\t  ")
+    
+    def test_parse_eml_string_malformed_raises(self):
+        """Test that completely malformed input raises ParseError."""
+        # This is not a valid email format at all
+        raw = "This is not an email at all, just random text"
+        # message_from_string is lenient, but we should still get a record
+        # with empty sender, which should raise
+        with pytest.raises(ParseError):
+            parse_eml_string(raw)
+    
+    def test_parse_eml_string_multipart(self):
+        """Test parsing a multipart email string."""
+        raw = """From: sender@example.com
+To: recipient@example.com
+Subject: Multipart Test
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain; charset=utf-8
+
+Plain text body.
+--boundary123
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>HTML body.</p></body></html>
+--boundary123--
+"""
+        record = parse_eml_string(raw)
+        
+        assert isinstance(record, EmailRecord)
+        assert record.sender == "sender@example.com"
+        assert record.subject == "Multipart Test"
+        assert "Plain text body" in record.body_text
 
 
 if __name__ == "__main__":

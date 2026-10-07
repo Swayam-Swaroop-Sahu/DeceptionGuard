@@ -5,6 +5,11 @@ import re
 from .email_record import EmailRecord
 
 
+class ParseError(Exception):
+    """Raised when email parsing fails due to malformed/incomplete input."""
+    pass
+
+
 def _extract_links(text: str) -> List[str]:
     """Extract URLs from text using regex."""
     url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
@@ -54,12 +59,12 @@ def _get_attachments(msg) -> List[dict]:
     return attachments
 
 
-def parse_eml(path: str) -> EmailRecord:
-    """Parse a single .eml file and return an EmailRecord."""
-    with open(path, "rb") as f:
-        msg = message_from_bytes(f.read(), policy=default)
-    
+def _parse_email_message(msg) -> EmailRecord:
+    """Internal shared logic: parse an email.message.Message into an EmailRecord."""
     sender = msg.get("From", "")
+    if not sender:
+        raise ParseError("Missing required 'From' header")
+    
     reply_to = msg.get("Reply-To")
     return_path = msg.get("Return-Path")
     subject = msg.get("Subject")
@@ -79,6 +84,40 @@ def parse_eml(path: str) -> EmailRecord:
         links=links,
         attachments=attachments
     )
+
+
+def parse_eml(path: str) -> EmailRecord:
+    """Parse a single .eml file and return an EmailRecord."""
+    try:
+        with open(path, "rb") as f:
+            msg = message_from_bytes(f.read(), policy=default)
+    except OSError as e:
+        raise ParseError(f"Failed to read file: {e}") from e
+    
+    return _parse_email_message(msg)
+
+
+def parse_eml_string(raw_text: str) -> EmailRecord:
+    """Parse raw email text (string) and return an EmailRecord.
+    
+    Args:
+        raw_text: Raw email content as a string (RFC 5322 format).
+    
+    Returns:
+        EmailRecord with parsed fields.
+    
+    Raises:
+        ParseError: If the input is malformed or missing required headers.
+    """
+    if not raw_text or not raw_text.strip():
+        raise ParseError("Empty input: cannot parse email from empty string")
+    
+    try:
+        msg = message_from_string(raw_text, policy=default)
+    except Exception as e:
+        raise ParseError(f"Failed to parse email: {e}") from e
+    
+    return _parse_email_message(msg)
 
 
 def parse_mbox(path: str) -> List[EmailRecord]:
