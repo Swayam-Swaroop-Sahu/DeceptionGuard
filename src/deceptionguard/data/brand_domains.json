@@ -14,5 +14,13 @@
     {"brand": "DHL", "domains": ["dhl.com"]},
     {"brand": "FedEx", "domains": ["fedex.com"]},
     {"brand": "UPS", "domains": ["ups.com"]},
-    {"brand": "USPS", "domains": ["usps.com"]}
+    {"brand": "USPS", "domains": ["usps.com"]},
+    {"brand": "Slack", "domains": ["slack.com"]},
+    {"brand": "Zoom", "domains": ["zoom.us", "zoom.com"]},
+    {"brand": "GitHub", "domains": ["github.com"]},
+    {"brand": "Trello", "domains": ["trello.com"]},
+    {"brand": "Atlassian", "domains": ["atlassian.com", "jira.com"]},
+    {"brand": "Dropbox", "domains": ["dropbox.com"]},
+    {"brand": "Adobe", "domains": ["adobe.com"]},
+    {"brand": "IRS", "domains": ["irs.gov"]}
 ]

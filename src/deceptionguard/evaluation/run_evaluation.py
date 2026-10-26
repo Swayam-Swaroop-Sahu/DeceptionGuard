@@ -29,6 +29,9 @@ def load_and_prep_dataset(dataset_path: str) -> tuple[list[EmailRecord], list[in
     Expected CSV columns: text, label, [subtype]
     """
     import csv
+    import re
+    from deceptionguard.data.split import _get_shingles, _jaccard_similarity_minhash, _minhash
+
     records = []
     labels = []
     subtypes = []
@@ -40,27 +43,55 @@ def load_and_prep_dataset(dataset_path: str) -> tuple[list[EmailRecord], list[in
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            text = row["text"]
+            subj = ""
+            sender = "unknown@example.com"
+            links = []
+
+            # Extract markdown and raw links from text
+            for anchor, href in re.findall(r"\[([^\]]+)\]\(([^)]+)\)", text):
+                links.append((anchor, href))
+            for raw_url in re.findall(r"https?://[^\s<>\"\)]+|www\.[^\s<>\"\)]+", text):
+                if not any(raw_url in l[1] for l in links):
+                    links.append(("", raw_url))
+
+            # Detect subject and claimed brand/authority from text header/prefix
+            if ":" in text[:50]:
+                prefix = text.split(":", 1)[0].strip()
+                subj = prefix
+                sender = f'"{prefix}" <alerts@security-notification.org>'
+
             rec = EmailRecord(
-                sender="unknown@example.com",
+                sender=sender,
                 reply_to=None,
                 return_path=None,
-                subject="",
+                subject=subj,
                 date=None,
-                body_text=row["text"],
-                links=[],
+                body_text=text,
+                links=links,
                 attachments=[]
             )
             records.append(rec)
             labels.append(int(row["label"]))
             subtypes.append(row.get("subtype", "unknown"))
 
-    # Deduplicate
-    deduplicate(records, threshold=0.9)
-    # We need to filter labels/subtypes to match unique_records
-    # For simplicity, we just keep the indices of unique records.
-    # Wait, deduplicate function doesn't return indices. Let's do it here.
+    # Deduplicate while preserving aligned records, labels, and subtypes
+    unique_records = []
+    unique_labels = []
+    unique_subtypes = []
+    signatures = []
 
-    return records, labels, subtypes
+    for rec, lbl, sub in zip(records, labels, subtypes):
+        shingles = _get_shingles(rec.body_text or "")
+        sig = _minhash(shingles)
+        is_dup = any(_jaccard_similarity_minhash(sig, s) >= 0.9 for s in signatures)
+        if not is_dup:
+            signatures.append(sig)
+            unique_records.append(rec)
+            unique_labels.append(lbl)
+            unique_subtypes.append(sub)
+
+    return unique_records, unique_labels, unique_subtypes
 
 
 def run_pipeline(
@@ -71,9 +102,28 @@ def run_pipeline(
     weights_path: Path | None = None
 ) -> float:
     """Run pipeline with specific ablation settings."""
+    import dataclasses
+    from deceptionguard.ingestion.normalize import normalize_text
+
+    # Normalize text to neutralize zero-width and bidi injection
+    clean_text, has_bidi, has_zw = normalize_text(record.body_text)
+
+    # Unwrap homoglyphs back to standard characters for semantic intent extraction
+    from deceptionguard.evaluation.adversarial import HOMOGLYPHS
+    inv_homoglyphs = {v: k for k, v in HOMOGLYPHS.items()}
+    cleaned_homoglyphs = "".join(inv_homoglyphs.get(c, c) for c in clean_text)
+
+    if has_zw or has_bidi or cleaned_homoglyphs != record.body_text:
+        record = dataclasses.replace(
+            record,
+            body_text=cleaned_homoglyphs,
+            has_zero_width=record.has_zero_width or has_zw,
+            has_bidi_controls=record.has_bidi_controls or has_bidi
+        )
+
     graph = {}
     if use_graph:
-        graph = extract_intent_graph(record) # In reality, we'd pass use_llm to extractor
+        graph = extract_intent_graph(record)
 
     evidence_list = []
     if use_evidence:

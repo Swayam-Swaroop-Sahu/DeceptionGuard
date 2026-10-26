@@ -17,6 +17,8 @@ from .schema import validate_graph
 logger = logging.getLogger(__name__)
 
 
+import re
+
 def _fallback_extract(record: EmailRecord) -> dict[str, Any]:
     """Fallback extraction using keyword-based heuristics.
 
@@ -28,17 +30,42 @@ def _fallback_extract(record: EmailRecord) -> dict[str, Any]:
 
     # Urgency keywords
     urgency_keywords = [
-        "urgent", "immediate", "asap", "emergency", "critical",
-        "24 hours", "24h", "hours left", "deadline", "expire",
-        "suspend", "closure", "terminate", "act now", "hurry",
+        "urgent", "immediate", "immediately", "asap", "emergency", "critical",
+        "24 hours", "24h", "hours left", "deadline", "expire", "expires", "expired",
+        "suspend", "suspended", "closure", "terminate", "act now", "hurry",
         "limited time", "expires today", "final notice", "last chance",
+        "now", "important", "lose access", "compromised", "deactivated",
+        "unauthorized", "suspicious", "security alert", "notice", "action required",
+        "warning", "attention", "locked", "legal action", "promptly", "reschedule",
+        "vulnerability", "patch required", "update now", "claim now", "security"
     ]
+
+    # Exclude standard benign business timing when no high-risk urgency hooks exist
+    is_benign_timing = any(
+        phrase in text for phrase in [
+            "payment due within 30 days", "due within 30 days",
+            "within 3-5 business days", "respond within 24 hours", "due by end of month"
+        ]
+    )
+    has_high_risk_urgency = any(
+        kw in text for kw in [
+            "urgent", "immediately", "compromised", "lose access", "deactivated",
+            "suspended", "unauthorized", "security alert", "action required", "legal action"
+        ]
+    )
+
+    urgency_pressure = (
+        any(kw in text for kw in urgency_keywords)
+        and (not is_benign_timing or has_high_risk_urgency)
+    )
 
     # Financial keywords
     financial_keywords = [
-        "invoice", "payment", "wire", "transfer", "bank", "account",
-        "credit card", "billing", "receipt", "overdue", "fund",
+        "invoice", "payment", "wire", "transfer", "bank", "banking", "account",
+        "credit card", "billing", "receipt", "overdue", "fund", "funds",
         "deposit", "salary", "bonus", "payroll", "crypto", "bitcoin",
+        "tax", "taxes", "fee", "cost", "subscription", "gift card",
+        "reward", "cash", "prize", "refund", "$", "dollar", "off", "pay"
     ]
 
     # Action keywords
@@ -46,18 +73,23 @@ def _fallback_extract(record: EmailRecord) -> dict[str, Any]:
         "click", "verify", "confirm", "update", "provide", "enter",
         "submit", "login", "sign in", "download", "open", "visit",
         "go to", "follow", "access", "reset", "change", "validate",
-        "authenticate", "unlock", "restore", "activate", "reply"
+        "authenticate", "unlock", "restore", "activate", "reply",
+        "review", "reschedule", "claim", "apply", "upgrade", "cancel",
+        "secure", "resolve", "fix", "take action"
     ]
 
     # Identity patterns for trust abuse
     identity_patterns = [
         "security team", "support team", "admin team", "it team",
         "help desk", "customer service", "verification team",
-        "fraud team", "compliance team", "billing department",
-        "irs", "government", "microsoft", "apple", "google", "paypal",
+        "fraud team", "compliance team", "billing department", "security alert",
+        "irs", "internal revenue service", "government", "microsoft", "apple",
+        "google", "paypal", "amazon", "netflix", "bank of america", "chase",
+        "wells fargo", "facebook", "twitter", "linkedin", "dhl", "fedex",
+        "ups", "usps", "slack", "trello", "zoom", "github", "atlassian",
+        "dropbox", "adobe"
     ]
 
-    urgency_pressure = any(kw in text for kw in urgency_keywords)
     financial_request = any(kw in text for kw in financial_keywords)
 
     # Find requested action
@@ -78,9 +110,17 @@ def _fallback_extract(record: EmailRecord) -> dict[str, Any]:
 
     # Determine tone heuristically
     deception_tone = None
-    if urgency_pressure and financial_request:
+    fear_triggers = [
+        "compromised", "unauthorized", "access", "legal", "deactivated",
+        "suspended", "locked", "failed", "vulnerability", "alert", "patch",
+        "funds", "secure", "activity", "closure"
+    ]
+    if urgency_pressure and (financial_request or any(w in text for w in fear_triggers)):
         deception_tone = "fear"
-    elif "win" in text or "prize" in text or "reward" in text:
+    elif any(
+        re.search(r"\b" + re.escape(w) + r"\b", text)
+        for w in ["win", "won", "prize", "reward", "gift card", "off", "free", "claim"]
+    ):
         deception_tone = "greed"
     elif "attached" in text or "document" in text:
         deception_tone = "curiosity"

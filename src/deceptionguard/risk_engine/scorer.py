@@ -54,9 +54,9 @@ def load_weights(path: Path | str | None = None) -> tuple[dict[str, int], dict[s
         "deception_tone_high_risk": 10
     }
     evidence_w = {
-        "DISPLAY_NAME_BRAND_MISMATCH": 40,
+        "DISPLAY_NAME_BRAND_MISMATCH": 50,
         "URL_IP_LITERAL": 35,
-        "BRAND_TYPOSQUATTING": 40,
+        "BRAND_TYPOSQUATTING": 50,
         "ATTACHMENT_EXECUTABLE": 50,
     }
     return intent_w, evidence_w

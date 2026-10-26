@@ -71,6 +71,21 @@ def detect_sender_mismatch(record: EmailRecord) -> list[Evidence]:
                          header_ref="From"
                      ))
 
+    # Also check subject brand claims if From display name did not trigger
+    subject_text = (record.subject or "").lower()
+    if subject_text and sender_domain and not any(e.evidence_type == "DISPLAY_NAME_BRAND_MISMATCH" for e in evidences):
+        for brand_info in BRAND_DATA:
+            brand_name = brand_info["brand"].lower()
+            if brand_name in subject_text:
+                if not any(sender_domain == d or sender_domain.endswith("." + d) for d in brand_info["domains"]):
+                    evidences.append(Evidence(
+                        evidence_type="DISPLAY_NAME_BRAND_MISMATCH",
+                        severity=Severity.CRITICAL,
+                        explanation=f"Subject claims '{brand_info['brand']}' but sender domain '{sender_domain}' is not authorized.",
+                        header_ref="Subject"
+                    ))
+                    break
+
     # 2. From vs Reply-To vs Return-Path
     if record.reply_to:
         reply_domain = _extract_domain(record.reply_to)

@@ -10,7 +10,8 @@ def run_cli_with_capsys(capsys, *args):
     """Run CLI command and return stdout/stderr."""
     with patch.object(sys, "argv", ["dg"] + list(args)), \
          patch("deceptionguard.intent_graph.extractor.extract_intent_graph", return_value={"urgency_pressure": True, "financial_request": False, "action_requested": None, "deception_tone": None, "trust_abuse": None}), \
-         patch("deceptionguard.evaluation.metrics.bootstrap_ci", return_value={}):
+         patch("deceptionguard.evaluation.metrics.bootstrap_ci", return_value={}), \
+         patch("deceptionguard.evaluation.run_evaluation.bootstrap_ci", return_value={}):
         try:
             main()
             returncode = 0
