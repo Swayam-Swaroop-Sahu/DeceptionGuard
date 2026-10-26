@@ -1,11 +1,18 @@
-"""Script to generate professional, updated Project Report.pdf for DeceptionGuard.
+"""Comprehensive builder for DeceptionGuard Project Report.
 
-Implements two-pass page numbering, roman numerals for preliminary pages,
-refined typography, balanced figures, comprehensive empirical tables,
-and an Appendix containing the GitHub repository link.
+Generates both:
+1. 'Project Report.pdf' via ReportLab (two-pass academic layout, running headers, roman preliminary pages)
+2. 'Project Report.docx' via python-docx (executive Word layout, styled tables, embedded figures, Appendix)
 """
 
+from __future__ import annotations
+
 import os
+from pathlib import Path
+
+# ==========================================
+# PART 1: REPORTLAB PDF GENERATOR
+# ==========================================
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, KeepTogether, HRFlowable
@@ -15,14 +22,9 @@ from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
 PDF_PATH = "Project Report.pdf"
+DOCX_PATH = "Project Report.docx"
 
 class AcademicNumberedCanvas(canvas.Canvas):
-    """Two-pass canvas that applies academic headers and page numbering.
-    Page 1: Title page (no header/footer)
-    Page 2: Abstract (Roman numeral i)
-    Page 3: Table of Contents (Roman numeral ii)
-    Page 4+: Chapters 1 to Appendix (Arabic numerals 1, 2, 3...)
-    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -40,7 +42,6 @@ class AcademicNumberedCanvas(canvas.Canvas):
             pno = idx + 1
             if pno > 1:
                 self.saveState()
-                # Running Header
                 self.setFont("Helvetica-Bold", 7.5)
                 self.setFillColor(colors.HexColor("#4A5568"))
                 self.drawString(54, 750, "BCSE410L – CYBER SECURITY PROJECT  |  DECEPTIONGUARD TECHNICAL REPORT")
@@ -48,7 +49,6 @@ class AcademicNumberedCanvas(canvas.Canvas):
                 self.setLineWidth(0.6)
                 self.line(54, 744, 558, 744)
 
-                # Running Footer
                 self.line(54, 46, 558, 46)
                 self.setFont("Helvetica", 8)
                 self.setFillColor(colors.HexColor("#718096"))
@@ -72,14 +72,14 @@ def generate_pdf(toc_page_map=None):
     if toc_page_map is None:
         toc_page_map = {
             "ch1": "1",
-            "ch2": "3",
-            "ch3": "5",
-            "ch4": "7",
-            "ch5": "9",
-            "ch6": "11",
-            "ch7": "13",
-            "ch8": "14",
-            "app": "15"
+            "ch2": "2",
+            "ch3": "4",
+            "ch4": "5",
+            "ch5": "7",
+            "ch6": "9",
+            "ch7": "11",
+            "ch8": "11",
+            "app": "12"
         }
 
     doc = SimpleDocTemplate(
@@ -93,10 +93,10 @@ def generate_pdf(toc_page_map=None):
 
     styles = getSampleStyleSheet()
 
-    c_primary = colors.HexColor("#1A365D")   # Deep Navy
-    c_accent = colors.HexColor("#2B6CB0")    # Classic Blue
-    c_dark = colors.HexColor("#2D3748")      # Charcoal Body
-    c_light_bg = colors.HexColor("#F7FAFC")  # Subtle Off-White
+    c_primary = colors.HexColor("#1A365D")
+    c_accent = colors.HexColor("#2B6CB0")
+    c_dark = colors.HexColor("#2D3748")
+    c_light_bg = colors.HexColor("#F7FAFC")
     c_callout_bg = colors.HexColor("#EBF8FF")
 
     styles.add(ParagraphStyle(
@@ -181,7 +181,7 @@ def generate_pdf(toc_page_map=None):
         leading=13.0,
         textColor=c_dark,
         spaceAfter=5.5,
-        alignment=4 # Justified
+        alignment=4
     ))
     styles.add(ParagraphStyle(
         name="ReportBullet",
@@ -224,20 +224,10 @@ def generate_pdf(toc_page_map=None):
         leading=13.5,
         textColor=c_primary
     ))
-    styles.add(ParagraphStyle(
-        name="CalloutHeader",
-        fontName="Helvetica-Bold",
-        fontSize=9.2,
-        leading=12.5,
-        textColor=c_primary,
-        spaceAfter=2
-    ))
 
     story = []
 
-    # ==========================================
-    # PAGE 1: TITLE PAGE
-    # ==========================================
+    # Title Page
     story.append(Spacer(1, 10))
     story.append(Paragraph("BCSE410L – CYBER SECURITY PROJECT", styles["TitleCourse"]))
     story.append(Spacer(1, 12))
@@ -279,9 +269,7 @@ def generate_pdf(toc_page_map=None):
     story.append(Paragraph(dept_text, styles["DeptBlock"]))
     story.append(PageBreak())
 
-    # ==========================================
-    # PAGE 2: ABSTRACT
-    # ==========================================
+    # Abstract
     story.append(Paragraph("ABSTRACT", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=1, color=c_accent, spaceBefore=2, spaceAfter=8))
 
@@ -341,9 +329,7 @@ def generate_pdf(toc_page_map=None):
     story.append(Paragraph(kw_text, styles["ReportBody"]))
     story.append(PageBreak())
 
-    # ==========================================
-    # PAGE 3: TABLE OF CONTENTS
-    # ==========================================
+    # Table of Contents
     story.append(Paragraph("TABLE OF CONTENTS", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=1, color=c_accent, spaceBefore=2, spaceAfter=10))
 
@@ -396,9 +382,7 @@ def generate_pdf(toc_page_map=None):
     story.append(t_toc)
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 1: INTRODUCTION
-    # ==========================================
+    # Chapter 1
     story.append(Paragraph("1. INTRODUCTION", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -409,10 +393,8 @@ def generate_pdf(toc_page_map=None):
         "or payload execution. Existing organizational defenses typically partition into two isolated modalities: signature-based "
         "heuristic filters and statistical machine learning classifiers. Rule-based systems compare incoming headers and bodies "
         "against static blacklists and regular expressions, succeeding on historical spam but failing against targeted spear-phishing. "
-        "Statistical classifiers (e.g., Naive Bayes, Support Vector Machines) infer boundaries from historical distributions but are "
-        "notoriously susceptible to evasion techniques such as visual homoglyphs and hidden CSS text injection. In modern campaigns, "
-        "an asymmetric advantage favors attackers who test payloads against commercial filters prior to deployment. A resilient defense "
-        "mandates multi-layered evidence corroboration."
+        "Statistical classifiers infer boundaries from historical distributions but are notoriously susceptible to evasion techniques "
+        "such as visual homoglyphs and hidden CSS text injection. A resilient defense mandates multi-layered evidence corroboration."
     )
     story.append(Paragraph(bg_p, styles["ReportBody"]))
 
@@ -445,9 +427,7 @@ def generate_pdf(toc_page_map=None):
     story.append(Paragraph(scope_p, styles["ReportBody"]))
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 2: PROJECT DESCRIPTION AND GOALS
-    # ==========================================
+    # Chapter 2
     story.append(Paragraph("2. PROJECT DESCRIPTION AND GOALS", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -510,16 +490,14 @@ def generate_pdf(toc_page_map=None):
     )
     story.append(Paragraph(plan_p, styles["ReportBody"]))
 
-    gantt_path = "extracted_report_images/page_7_img_1.png"
+    gantt_path = "docs/figures/page_7_img_1.png"
     if os.path.exists(gantt_path):
         story.append(Spacer(1, 2))
         story.append(Image(gantt_path, width=460, height=200))
         story.append(Paragraph("Fig. 1. Gantt chart of the project schedule and development phases", styles["FigCaption"]))
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 3: TECHNICAL SPECIFICATION
-    # ==========================================
+    # Chapter 3
     story.append(Paragraph("3. TECHNICAL SPECIFICATION", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -578,9 +556,7 @@ def generate_pdf(toc_page_map=None):
     story.append(t_spec)
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 4: DESIGN APPROACH AND DETAILS
-    # ==========================================
+    # Chapter 4
     story.append(Paragraph("4. DESIGN APPROACH AND DETAILS", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -595,7 +571,7 @@ def generate_pdf(toc_page_map=None):
     )
     story.append(Paragraph(arch_p, styles["ReportBody"]))
 
-    arch_img_path = "extracted_report_images/page_11_img_1.png"
+    arch_img_path = "docs/figures/page_11_img_1.png"
     if os.path.exists(arch_img_path):
         story.append(Spacer(1, 2))
         story.append(Image(arch_img_path, width=450, height=220))
@@ -652,9 +628,7 @@ def generate_pdf(toc_page_map=None):
     story.append(t_alg2)
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 5: EXPERIMENTAL SETUP AND IMPLEMENTATION
-    # ==========================================
+    # Chapter 5
     story.append(Paragraph("5. EXPERIMENTAL SETUP AND IMPLEMENTATION", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -680,7 +654,7 @@ def generate_pdf(toc_page_map=None):
     )
     story.append(Paragraph(out_p, styles["ReportBody"]))
 
-    console_img_path = "extracted_report_images/page_14_img_1.png"
+    console_img_path = "docs/figures/page_14_img_1.png"
     if os.path.exists(console_img_path):
         story.append(Spacer(1, 2))
         story.append(Image(console_img_path, width=420, height=210))
@@ -711,9 +685,7 @@ def generate_pdf(toc_page_map=None):
     story.append(t_impl)
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 6: RESULT ANALYSIS
-    # ==========================================
+    # Chapter 6
     story.append(Paragraph("6. RESULT ANALYSIS", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -813,9 +785,7 @@ def generate_pdf(toc_page_map=None):
     story.append(t_comp)
     story.append(PageBreak())
 
-    # ==========================================
-    # CHAPTER 7: CONCLUSION AND FUTURE WORKS
-    # ==========================================
+    # Chapter 7
     story.append(Paragraph("7. CONCLUSION AND FUTURE WORKS", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -842,9 +812,7 @@ def generate_pdf(toc_page_map=None):
     )
     story.append(Paragraph(fut_p, styles["ReportBody"]))
 
-    # ==========================================
-    # CHAPTER 8: REFERENCES
-    # ==========================================
+    # Chapter 8
     story.append(Spacer(1, 8))
     story.append(Paragraph("8. REFERENCES", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
@@ -866,9 +834,7 @@ def generate_pdf(toc_page_map=None):
         story.append(Paragraph(r, styles["ReportBullet"]))
     story.append(PageBreak())
 
-    # ==========================================
-    # APPENDIX A: GITHUB REPOSITORY & REPRODUCTION
-    # ==========================================
+    # Appendix A
     story.append(Paragraph("APPENDIX A: GITHUB REPOSITORY & IMPLEMENTATION ARTIFACTS", styles["ChapterTitle"]))
     story.append(HRFlowable(width="100%", thickness=1, color=c_accent, spaceBefore=1, spaceAfter=8))
 
@@ -949,16 +915,12 @@ def generate_pdf(toc_page_map=None):
     """
     story.append(Paragraph(repro_text, styles["ReportBody"]))
 
-    # Build document
     doc.build(story, canvasmaker=AcademicNumberedCanvas)
-    print(f"Project Report built successfully: {PDF_PATH}")
+    print(f"[PDF] Project Report built successfully: {PDF_PATH}")
 
 
-def build_two_pass():
-    # Pass 1: Build draft
+def build_two_pass_pdf():
     generate_pdf()
-
-    # Pass 2: Inspect chapter starting pages using pymupdf
     import fitz
     doc = fitz.open(PDF_PATH)
     page_map = {}
@@ -976,16 +938,830 @@ def build_two_pass():
 
     for pno in range(3, len(doc)):
         text = doc[pno].get_text()
-        body_pno = pno - 2  # pno=3 is Page 4, which is body page 1
+        body_pno = pno - 2
         for key, target in chapter_targets.items():
             if target in text and key not in page_map:
                 page_map[key] = str(body_pno)
 
-    print("Discovered Chapter Pages (body numbering):", page_map)
-
-    # Re-build PDF with precise TOC page map
     generate_pdf(page_map)
-    print("Two-pass build finished successfully!")
+    print("[PDF] Two-pass build finished successfully!")
+
+
+# ==========================================
+# PART 2: PYTHON-DOCX WORD GENERATOR
+# ==========================================
+def build_docx():
+    import docx
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml import parse_xml
+    from docx.oxml.ns import nsdecls
+
+    doc = docx.Document()
+
+    # Set page margins to standard 0.75 in (54 pt)
+    for section in doc.sections:
+        section.top_margin = Inches(0.75)
+        section.bottom_margin = Inches(0.75)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
+        section.different_first_page_header_footer = True
+
+        # Header for subsequent pages
+        header = section.header
+        hp = header.paragraphs[0]
+        hp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        hrun = hp.add_run("BCSE410L – CYBER SECURITY PROJECT  |  DECEPTIONGUARD TECHNICAL REPORT")
+        hrun.font.name = "Arial"
+        hrun.font.size = Pt(8)
+        hrun.font.bold = True
+        hrun.font.color.rgb = RGBColor(0x4A, 0x55, 0x68)
+
+        # Footer for subsequent pages
+        footer = section.footer
+        fp = footer.paragraphs[0]
+        fp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        frun = fp.add_run("School of Computer Science and Engineering (SCOPE)\t")
+        frun.font.name = "Arial"
+        frun.font.size = Pt(8.5)
+        frun.font.color.rgb = RGBColor(0x71, 0x80, 0x96)
+
+    # Style Helpers
+    def set_cell_background(cell, hex_color):
+        shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{hex_color}"/>')
+        cell._tc.get_or_add_tcPr().append(shd)
+
+    def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
+        tcMar = parse_xml(
+            f'<w:tcMar {nsdecls("w")}><w:top w:w="{top}" w:type="dxa"/><w:bottom w:w="{bottom}" w:type="dxa"/>'
+            f'<w:left w:w="{left}" w:type="dxa"/><w:right w:w="{right}" w:type="dxa"/></w:tcMar>'
+        )
+        cell._tc.get_or_add_tcPr().append(tcMar)
+
+    def add_title(text, font_size=16, color=(0x1A, 0x36, 0x5D), space_after=10, bold=True, center=True):
+        p = doc.add_paragraph()
+        if center:
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(text)
+        run.bold = bold
+        run.font.name = "Arial"
+        run.font.size = Pt(font_size)
+        run.font.color.rgb = RGBColor(*color)
+        p.paragraph_format.space_after = Pt(space_after)
+        return p
+
+    def add_heading(text, level=1):
+        p = doc.add_paragraph()
+        run = p.add_run(text)
+        run.bold = True
+        run.font.name = "Arial"
+        if level == 1:
+            run.font.size = Pt(13.5)
+            run.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+            p.paragraph_format.space_before = Pt(14)
+            p.paragraph_format.space_after = Pt(4)
+        elif level == 2:
+            run.font.size = Pt(11)
+            run.font.color.rgb = RGBColor(0x2B, 0x6C, 0xB0)
+            p.paragraph_format.space_before = Pt(10)
+            p.paragraph_format.space_after = Pt(3)
+        elif level == 3:
+            run.font.size = Pt(9.8)
+            run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+            p.paragraph_format.space_before = Pt(8)
+            p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.keep_with_next = True
+        return p
+
+    def add_p(text, bold_prefix="", space_after=5):
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.space_after = Pt(space_after)
+        p.paragraph_format.line_spacing = 1.15
+        if bold_prefix:
+            br = p.add_run(bold_prefix + " ")
+            br.bold = True
+            br.font.name = "Calibri"
+            br.font.size = Pt(10)
+            br.font.color.rgb = RGBColor(0x1A, 0x20, 0x2C)
+        run = p.add_run(text)
+        run.font.name = "Calibri"
+        run.font.size = Pt(10)
+        run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+        return p
+
+    def add_bullet(text, bold_prefix=""):
+        p = doc.add_paragraph(style='List Bullet')
+        p.paragraph_format.space_after = Pt(2.5)
+        p.paragraph_format.line_spacing = 1.15
+        if bold_prefix:
+            br = p.add_run(bold_prefix + " ")
+            br.bold = True
+            br.font.name = "Calibri"
+            br.font.size = Pt(9.5)
+            br.font.color.rgb = RGBColor(0x1A, 0x20, 0x2C)
+        run = p.add_run(text)
+        run.font.name = "Calibri"
+        run.font.size = Pt(9.5)
+        run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+        return p
+
+    def add_callout(text, bold_title=""):
+        t = doc.add_table(rows=1, cols=1)
+        t.alignment = WD_TABLE_ALIGNMENT.CENTER
+        cell = t.cell(0, 0)
+        set_cell_background(cell, "EBF8FF")
+        set_cell_margins(cell, top=140, bottom=140, left=200, right=200)
+        p = cell.paragraphs[0]
+        p.paragraph_format.space_after = Pt(0)
+        if bold_title:
+            bt = p.add_run(bold_title + "\n")
+            bt.bold = True
+            bt.font.name = "Arial"
+            bt.font.size = Pt(10)
+            bt.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+        rt = p.add_run(text)
+        rt.font.name = "Calibri"
+        rt.font.size = Pt(9.5)
+        rt.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+        doc.add_paragraph().paragraph_format.space_after = Pt(4)
+
+    def add_code_box(code_text):
+        t = doc.add_table(rows=1, cols=1)
+        t.alignment = WD_TABLE_ALIGNMENT.CENTER
+        cell = t.cell(0, 0)
+        set_cell_background(cell, "EDF2F7")
+        set_cell_margins(cell, top=120, bottom=120, left=180, right=180)
+        p = cell.paragraphs[0]
+        p.paragraph_format.space_after = Pt(0)
+        run = p.add_run(code_text)
+        run.font.name = "Consolas"
+        run.font.size = Pt(8.5)
+        run.font.color.rgb = RGBColor(0x1A, 0x20, 0x2C)
+        doc.add_paragraph().paragraph_format.space_after = Pt(4)
+
+    # ------------------------------------------
+    # TITLE PAGE
+    # ------------------------------------------
+    add_title("BCSE410L – CYBER SECURITY PROJECT", font_size=12.5, color=(0x2B, 0x6C, 0xB0), space_after=15)
+
+    logo_path = "docs/figures/page_1_img_1.jpeg"
+    if os.path.exists(logo_path):
+        p_img = doc.add_paragraph()
+        p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_img.paragraph_format.space_after = Pt(20)
+        p_img.add_run().add_picture(logo_path, width=Inches(1.8))
+
+    add_title(
+        "DECEPTIONGUARD: A LOCAL-FIRST DUAL-ENGINE FRAMEWORK FOR PHISHING EMAIL ANALYSIS COMBINING DETERMINISTIC HEURISTICS AND LARGE LANGUAGE MODELS",
+        font_size=16.5,
+        color=(0x1A, 0x36, 0x5D),
+        space_after=25
+    )
+
+    p_auth = doc.add_paragraph()
+    p_auth.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_auth.paragraph_format.space_after = Pt(16)
+    r = p_auth.add_run("Prepared by:\n")
+    r.bold = True
+    r.font.size = Pt(10.5)
+    p_auth.add_run("SWAYAM SWAROOP SAHU  (Reg. No: 23BCE0746)\nSANCHIT KUMAR  (Reg. No: 23BCE0043)")
+
+    p_sup = doc.add_paragraph()
+    p_sup.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_sup.paragraph_format.space_after = Pt(20)
+    rs = p_sup.add_run("Under the Supervision of\nDr. Anto S\nAssociate Professor")
+    rs.bold = True
+    rs.font.size = Pt(10.5)
+    rs.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+
+    p_dept = doc.add_paragraph()
+    p_dept.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_dept.paragraph_format.space_after = Pt(10)
+    rd = p_dept.add_run("School of Computer Science and Engineering (SCOPE)\nBachelor of Technology in Computer Science and Engineering\nOctober 2026")
+    rd.font.size = Pt(10)
+
+    doc.add_page_break()
+
+    # ------------------------------------------
+    # ABSTRACT
+    # ------------------------------------------
+    add_heading("ABSTRACT", level=1)
+    add_p(
+        "Phishing attacks remain one of the most prolific and damaging entry vectors in enterprise cybersecurity. Attackers "
+        "routinely bypass perimeter email security gateways using sophisticated social engineering, high-trust brand impersonation, "
+        "and character-level token obfuscation. Existing detection solutions overwhelmingly commit to a single paradigm: static "
+        "heuristic rule-sets struggle to generalize against zero-day phrasing, whereas pure machine learning and transformer models "
+        "exhibit brittle tokenization boundaries, suffer elevated false positive rates on benign corporate administrative traffic, "
+        "and lack the interpretable factor attribution required for rapid Security Operations Center (SOC) triage."
+    )
+    add_p(
+        "In this project, we present DeceptionGuard, an advanced, local-first Python framework implementing an asymmetric "
+        "dual-engine analysis architecture. DeceptionGuard synergizes a fast TF-IDF baseline machine learning model, extensible "
+        "deterministic heuristic evidence extractors, and a structured Large Language Model (LLM) intent analysis graph. The primary "
+        "execution path relies exclusively on the Python standard library, operating completely offline with zero mandatory third-party "
+        "dependencies while offering optional external LLM API integration. Prior to scoring, an engineered ingestion engine decodes "
+        "multipart MIME structures, handles advanced transfer encodings (Base64, Quoted-Printable), tracks nested Cascading Style Sheets "
+        "(CSS) visibility attributes via explicit state stacks (neutralizing display: none and font-size: 0px text hiding), "
+        "and strips adversarial Unicode homoglyphs and zero-width control characters."
+    )
+    add_p(
+        "We report comprehensive empirical evaluations across cross-domain public and synthetic corpora, incorporating MinHash "
+        "near-deduplication (J >= 0.9) to strictly eliminate train/test data leakage. The Full Pipeline achieves 96.8% Precision, "
+        "93.4% Recall, a 95.1% F1-Score, and an exceptional Expected Calibration Error (ECE: 0.048), demonstrating statistically "
+        "significant superiority over isolated statistical baselines (McNemar test p = 0.00018). Under rigorous adversarial evaluation "
+        "encompassing Unicode homoglyph substitution, zero-width token-splitters, brand typosquatting, and combined multi-vector attacks, "
+        "DeceptionGuard bounds performance degradation strictly within 1.8%. The complete source code, automated test suite (68 tests, "
+        "83% line coverage), and reproduction CLI tools are openly available."
+    )
+    add_callout(
+        "Formulating an asymmetric dual-engine framework that combines deterministic heuristic anchors with structural LLM "
+        "intent graphs, achieving 95.1% F1-score with bounded risk attribution and resilient offline autonomy.",
+        bold_title="Key Research Contribution"
+    )
+    add_p("Keywords: Phishing Detection, Cybersecurity, Large Language Models, Heuristic Analysis, Explainable AI, Adversarial Robustness, Expected Calibration Error, Offline-First Architecture.", bold_prefix="Keywords:")
+
+    doc.add_page_break()
+
+    # ------------------------------------------
+    # TABLE OF CONTENTS
+    # ------------------------------------------
+    add_heading("TABLE OF CONTENTS", level=1)
+    toc_lines = [
+        "1. INTRODUCTION ....................................................................................................................... Page 1",
+        "    1.1 Background ................................................................................................................. Page 1",
+        "    1.2 Motivation ................................................................................................................. Page 1",
+        "    1.3 Scope of the Project ................................................................................................. Page 2",
+        "2. PROJECT DESCRIPTION AND GOALS ................................................................................. Page 2",
+        "    2.1 Literature Review ........................................................................................................ Page 2",
+        "    2.2 Research Gap ............................................................................................................. Page 3",
+        "    2.3 Problem Statement ...................................................................................................... Page 3",
+        "    2.4 Objectives ................................................................................................................... Page 3",
+        "    2.5 Project Plan ............................................................................................................... Page 3",
+        "3. TECHNICAL SPECIFICATION ............................................................................................... Page 4",
+        "    3.1 Requirements (Functional & Non-Functional) ............................................................ Page 4",
+        "    3.2 Feasibility Study (Technical, Economic, Social) ......................................................... Page 5",
+        "    3.3 System Specification (Hardware & Software) ............................................................. Page 5",
+        "4. DESIGN APPROACH AND DETAILS .................................................................................... Page 5",
+        "    4.1 System Architecture .................................................................................................... Page 5",
+        "    4.2 Algorithms (Risk Scoring & Intent Fallback) .............................................................. Page 6",
+        "5. EXPERIMENTAL SETUP AND IMPLEMENTATION ............................................................ Page 7",
+        "    5.1 Experimental Setup ..................................................................................................... Page 7",
+        "    5.2 Output of the Proposed System .................................................................................... Page 7",
+        "6. RESULT ANALYSIS ................................................................................................................ Page 9",
+        "    6.1 Empirical Ablation Study Results ................................................................................. Page 9",
+        "    6.2 Adversarial Robustness Evaluation .............................................................................. Page 10",
+        "    6.3 Comparison with Existing Systems ............................................................................. Page 10",
+        "7. CONCLUSION AND FUTURE WORKS ................................................................................. Page 11",
+        "8. REFERENCES ......................................................................................................................... Page 11",
+        "APPENDIX A: GITHUB REPOSITORY & REPRODUCTION GUIDE .......................................... Page 12"
+    ]
+    for line in toc_lines:
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(2)
+        r = p.add_run(line)
+        r.font.name = "Consolas"
+        r.font.size = Pt(8.8)
+        if line.startswith(("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "APPENDIX")):
+            r.bold = True
+            r.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+
+    doc.add_page_break()
+
+    # ------------------------------------------
+    # CHAPTER 1: INTRODUCTION
+    # ------------------------------------------
+    add_heading("1. INTRODUCTION", level=1)
+    add_heading("1.1 Background", level=2)
+    add_p(
+        "Electronic mail remains the preeminent transmission channel for enterprise cyber attacks. Because email delivers content "
+        "directly to human operators, threat actors exploit cognitive trust to prompt credential submission, financial transfers, "
+        "or payload execution. Existing organizational defenses typically partition into two isolated modalities: signature-based "
+        "heuristic filters and statistical machine learning classifiers. Rule-based systems compare incoming headers and bodies "
+        "against static blacklists and regular expressions, succeeding on historical spam but failing against targeted spear-phishing. "
+        "Statistical classifiers infer boundaries from historical distributions but are notoriously susceptible to evasion techniques "
+        "such as visual homoglyphs and hidden CSS text injection. In modern campaigns, an asymmetric advantage favors attackers who test "
+        "payloads against commercial filters prior to deployment. A resilient defense mandates multi-layered evidence corroboration."
+    )
+
+    add_heading("1.2 Motivation", level=2)
+    add_p(
+        "Large Language Models (LLMs) present remarkable capabilities in decoding linguistic subtleties, persuasion pressure, and "
+        "social-engineering intent. However, enterprise deployment of unconstrained LLMs introduces substantial operational liability: "
+        "monetary cost per token, significant latency overheads (1–3 seconds per message), non-deterministic outputs, and susceptibility "
+        "to indirect prompt injection. Crucially, pure cloud LLMs mandate continuous network connectivity, directly violating strict air-gapped "
+        "or zero-trust enclave policies. Deterministic heuristics reside at the opposing pole: instantaneous, zero-cost, and completely "
+        "auditable, yet fundamentally blind to high-level persuasion intent."
+    )
+    add_p(
+        "DeceptionGuard was conceived to bridge this divide. It couples deterministic structural anchors with semantic intent extraction, "
+        "incorporates a local keyword fallback ensuring 100% offline autonomy, and produces an interpretable additive score decomposing "
+        "into explicit evidence factors. Security analysts obtain transparent, mathematically bounded verdicts without exposing message "
+        "data to third-party cloud infrastructure."
+    )
+
+    add_heading("1.3 Scope of the Project", level=2)
+    add_p(
+        "The project encompasses the end-to-end design, implementation, and empirical validation of the DeceptionGuard framework. "
+        "The technical scope includes: (i) native RFC 5322 .eml and .mbox parsing; (ii) proactive content normalization tracking CSS hidden "
+        "text visibility stacks and Unicode control characters; (iii) a TF-IDF Logistic Regression baseline; (iv) deterministic evidence "
+        "detectors for brand typosquatting, display-name spoofing, and IP-literal URLs; (v) an LLM-powered intent analysis graph equipped "
+        "with an offline heuristic fallback; (vi) a bounded, additive risk engine ($S_{\\text{final}} \\in [0, 100]$); and (vii) two operator "
+        "interfaces (CLI and interactive Web Console). The evaluation protocol encompasses cross-corpus ablation experiments (SpamAssassin, "
+        "Jose Nazario Phishing Corpus, Enron, and synthetic lures) with MinHash deduplication, Expected Calibration Error analysis, "
+        "and four-vector adversarial robustness benchmarking."
+    )
+
+    # ------------------------------------------
+    # CHAPTER 2: PROJECT DESCRIPTION AND GOALS
+    # ------------------------------------------
+    add_heading("2. PROJECT DESCRIPTION AND GOALS", level=1)
+    add_heading("2.1 Literature Review", level=2)
+    add_p(
+        "The academic foundation of email threat analysis spans several evolutionary paradigms:\n"
+        "• Oest et al. [1] examined the end-to-end lifecycle of large-scale phishing campaigns, revealing that a large proportion "
+        "of victims succumb before centralized threat intelligence feeds disseminate signatures, establishing the necessity for real-time local detection.\n"
+        "• Alkhalil et al. [2] surveyed phishing evasion methodologies, highlighting how single-engine architectures suffer cataclysmic "
+        "performance drops when threat actors alter infrastructure or payload structure.\n"
+        "• Comparative Classifier Surveys [3] evaluated Naive Bayes, Random Forests, and deep neural networks across multiple datasets, "
+        "demonstrating that no single statistical classifier maintains dominant accuracy across distinct corpora.\n"
+        "• PhishOut [4] demonstrated that compact, high-signal feature representations can match deep neural architectures while preserving computational efficiency.\n"
+        "• Heiding et al. [5] analyzed LLMs in offensive and defensive roles, concluding that while models effectively reason over social-engineering intent, "
+        "their execution costs and non-determinism require hybrid guardrails.\n"
+        "• APOLLO [6] and Salloum et al. [8] underscored that detection systems are significantly more valuable when generating plain-language, "
+        "actionable factor explanations rather than opaque probability scores.\n"
+        "• Guo et al. [9] established Expected Calibration Error (ECE) as an imperative metric for assessing whether confidence scores accurately "
+        "reflect empirical error rates.\n"
+        "• Broder [10] formulated MinHash shingle signatures for document resemblance, which we implement to guarantee that training and evaluation "
+        "splits remain strictly free of near-duplicate leakage."
+    )
+
+    add_heading("2.2 Research Gap", level=2)
+    add_p(
+        "Prior works universally exhibit one of three systemic shortcomings: (1) Fragility—isolated heuristics fail on zero-day phrasing, "
+        "while statistical ML breaks under character-level perturbations; (2) Operational Infeasibility—emerging LLM detectors require cloud "
+        "API calls, incurring severe latency, recurring API expenses, and data privacy hazards; or (3) Opacity—deep neural models output "
+        "uncalibrated, black-box predictions that SOC analysts cannot readily audit. DeceptionGuard resolves this triad through an asymmetric dual-engine "
+        "architecture that pairs deterministic speed with semantic depth, retains complete offline execution autonomy, and exposes auditable factor-level weights."
+    )
+
+    add_heading("2.3 Problem Statement", level=2)
+    add_p(
+        "Develop an explainable, local-first email threat detection system that synthesizes deterministic technical evidence with structural "
+        "semantic intent, operates entirely offline without mandatory external dependencies, outputs a mathematically bounded risk score "
+        "(S in [0, 100]) with factor-level attribution, and remains robust against adversarial obfuscation techniques."
+    )
+
+    add_heading("2.4 Objectives", level=2)
+    add_bullet("Ingest standard .eml and .mbox messages and normalize obfuscated content, including nested CSS-hidden text and zero-width characters.", bold_prefix="O1:")
+    add_bullet("Implement deterministic heuristic detectors targeting brand typosquatting, display-name spoofing, and URL IP literals.", bold_prefix="O2:")
+    add_bullet("Construct a semantic intent graph capturing urgency, financial coercion, and action directives, backed by a local offline fallback.", bold_prefix="O3:")
+    add_bullet("Formulate an auditable, additive risk engine parameterized via external TOML policy configurations.", bold_prefix="O4:")
+    add_bullet("Deliver both a command-line interface (CLI) and an interactive web dashboard for real-time investigation.", bold_prefix="O5:")
+    add_bullet("Execute rigorous cross-corpus ablation and adversarial robustness benchmarking with statistical significance validation.", bold_prefix="O6:")
+
+    add_heading("2.5 Project Plan", level=2)
+    add_p(
+        "The project was executed across five structured phases: Requirement Engineering & Literature Review, Core Engine Development "
+        "(Ingestion, Heuristics, Intent Graph), Risk Scoring & UI Integration, Testing & Defect Remediation (DEF-001–DEF-006), and "
+        "Empirical Cross-Corpus Evaluation. Fig. 1 illustrates the project timeline."
+    )
+
+    gantt_path = "docs/figures/page_7_img_1.png"
+    if os.path.exists(gantt_path):
+        p_gantt = doc.add_paragraph()
+        p_gantt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_gantt.add_run().add_picture(gantt_path, width=Inches(6.0))
+        p_cap = doc.add_paragraph("Fig. 1. Gantt chart of the project schedule and development phases")
+        p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_cap.paragraph_format.space_after = Pt(8)
+
+    # ------------------------------------------
+    # CHAPTER 3: TECHNICAL SPECIFICATION
+    # ------------------------------------------
+    add_heading("3. TECHNICAL SPECIFICATION", level=1)
+    add_heading("3.1 Requirements", level=2)
+    add_heading("3.1.1 Functional Requirements", level=3)
+    add_bullet("Extract envelope headers, multipart body alternatives, hyperlinks, and attachments into a normalized record.", bold_prefix="FR-01 (MIME Parsing):")
+    add_bullet("Track CSS visibility stacks to eliminate invisible text and map visual homoglyphs to canonical ASCII.", bold_prefix="FR-02 (De-obfuscation):")
+    add_bullet("Inspect brand typosquatting via Levenshtein constraints and verify RFC 5322 sender domain alignment.", bold_prefix="FR-03 (Heuristic Evidence):")
+    add_bullet("Extract threat intent categories (Urgency, Financial, Action, Tone) via LLM or keyword fallback.", bold_prefix="FR-04 (Intent Analysis):")
+    add_bullet("Compute bounded additive score S_final = min(100, sum w_k e_k + sum v_j i_j) mapped to risk bands.", bold_prefix="FR-05 (Risk Scoring):")
+    add_bullet("Output a complete waterfall breakdown associating every point with its triggering factor.", bold_prefix="FR-06 (Auditable Explanations):")
+    add_bullet("Provide CLI commands (scan, evaluate, serve) and an interactive web console.", bold_prefix="FR-07 (Interfaces):")
+
+    add_heading("3.1.2 Non-Functional Requirements", level=3)
+    add_bullet("Primary execution path shall depend strictly on the Python standard library with zero external calls.", bold_prefix="NFR-01 (Offline Autonomy):")
+    add_bullet("Deterministic analysis shall complete in under 15 milliseconds on commodity multi-core processors.", bold_prefix="NFR-02 (Low Latency):")
+    add_bullet("All risk scores shall be transparently auditable down to individual integer factor weights.", bold_prefix="NFR-03 (Interpretability):")
+    add_bullet("Pipeline outputs and evaluation splits shall remain invariant under fixed random seeds.", bold_prefix="NFR-04 (Reproducibility):")
+    add_bullet("The framework shall maintain >80% automated test coverage across all architectural units.", bold_prefix="NFR-05 (High Code Quality):")
+
+    add_heading("3.2 Feasibility Study", level=2)
+    add_p(
+        "• Technical Feasibility: Built upon Python 3.11+ standard library modules (email, html.parser, tomllib) "
+        "and standard scientific libraries (scikit-learn, numpy). Runs on standard multi-core hardware without requiring GPU acceleration.\n"
+        "• Economic Feasibility: Open-source architecture with zero licensing overhead. Eliminates mandatory cloud API billing through its local heuristic fallback.\n"
+        "• Social & Privacy Feasibility: Preserves user confidentiality by analyzing sensitive email communications strictly within local memory."
+    )
+
+    add_heading("3.3 System Specification", level=2)
+    t_spec_data = [
+        ["Component", "Development Environment", "Production Minimum"],
+        ["Processor", "Intel Core i7 / AMD Ryzen 7 (8 cores)", "Dual-core 2.0 GHz CPU (No GPU required)"],
+        ["Memory (RAM)", "16 GB DDR4", "4 GB RAM (8 GB recommended for large mbox)"],
+        ["Storage", "512 GB NVMe SSD", "500 MB free disk space"],
+        ["Operating System", "Windows 11 / Ubuntu 22.04 LTS", "Cross-platform (Linux, Windows, macOS)"],
+        ["Runtime Environment", "Python 3.11+ / venv", "Python 3.11 or higher"],
+        ["Core Dependencies", "Standard Library (email, html.parser)", "Zero external dependencies for core path"]
+    ]
+    t = doc.add_table(rows=len(t_spec_data), cols=3)
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r_idx, row in enumerate(t_spec_data):
+        for c_idx, val in enumerate(row):
+            cell = t.cell(r_idx, c_idx)
+            cell.text = val
+            p = cell.paragraphs[0]
+            p.runs[0].font.name = "Calibri"
+            p.runs[0].font.size = Pt(9)
+            if r_idx == 0:
+                p.runs[0].bold = True
+                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                set_cell_background(cell, "1A365D")
+            else:
+                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
+            set_cell_margins(cell, top=80, bottom=80, left=120, right=120)
+    doc.add_paragraph().paragraph_format.space_after = Pt(6)
+
+    # ------------------------------------------
+    # CHAPTER 4: DESIGN APPROACH AND DETAILS
+    # ------------------------------------------
+    add_heading("4. DESIGN APPROACH AND DETAILS", level=1)
+    add_heading("4.1 System Architecture", level=2)
+    add_p(
+        "DeceptionGuard operates through a linear, composable pipeline modeling the email analysis lifecycle. Raw email payloads "
+        "(.eml, .mbox) enter the ingestion engine, which unpacks multipart structures, resolves character sets, and passes normalized "
+        "text through the CSS visibility stack and Unicode un-obfuscator. The sanitized record simultaneously traverses three specialized "
+        "channels: (1) a baseline TF-IDF Logistic Regression classifier providing reference statistical probability; (2) deterministic "
+        "heuristic detectors emitting discrete security evidence; and (3) an intent extraction graph modeling persuasion tactics via LLM "
+        "or local heuristic rules. The risk engine aggregates these outputs into a single bounded score. Fig. 2 illustrates this topology."
+    )
+
+    arch_img_path = "docs/figures/page_11_img_1.png"
+    if os.path.exists(arch_img_path):
+        p_arch = doc.add_paragraph()
+        p_arch.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_arch.add_run().add_picture(arch_img_path, width=Inches(6.0))
+        p_cap = doc.add_paragraph("Fig. 2. End-to-End System Architecture of DeceptionGuard")
+        p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_cap.paragraph_format.space_after = Pt(8)
+
+    add_heading("4.2 Algorithms and Mathematical Formulations", level=2)
+    add_heading("4.2.1 Algorithm 1 — Transparent Additive Risk Scoring", level=3)
+    alg1_text = (
+        "Algorithm 1: Bounded Additive Risk Scoring\n"
+        "Input: Intent graph activations I = {i_1, ..., i_m}, Evidence set E = {e_1, ..., e_n}, Weight tables W_e, W_i\n"
+        "1: S_raw <- 0\n"
+        "2: for each triggered evidence e_k in E do: S_raw <- S_raw + W_e[e_k]\n"
+        "3: for each active intent node i_j in I do: S_raw <- S_raw + W_i[i_j]\n"
+        "4: S_final <- min(100, S_raw)\n"
+        "5: if S_final < 11: Band <- MINIMAL\n"
+        "   else if S_final < 40: Band <- LOW\n"
+        "   else if S_final < 70: Band <- MEDIUM\n"
+        "   else: Band <- HIGH\n"
+        "Output: Bounded risk score S_final in [0, 100], Risk Band, and Per-Factor Contribution Waterfall."
+    )
+    add_code_box(alg1_text)
+
+    add_heading("4.2.2 Algorithm 2 — Intent Extraction with Offline Fallback", level=3)
+    alg2_text = (
+        "Algorithm 2: Intent Graph Extraction with Resilient Offline Fallback\n"
+        "Input: Normalized record R, Optional LLM client configuration C\n"
+        "1: if C is valid and API key is configured then:\n"
+        "2:     try Graph <- Call_LLM_Endpoint(R, Schema_Prompt)\n"
+        "3:     catch (ConnectionError, Timeout, RateLimitError) do: Graph <- Keyword_Heuristic(R)\n"
+        "4: else: Graph <- Keyword_Heuristic(R)\n"
+        "5: Validate graph nodes (Urgency, Financial, Action Directives, Trust Abuse, Deception Tone)\n"
+        "Output: Schema-compliant intent graph G = (V, E)"
+    )
+    add_code_box(alg2_text)
+
+    # ------------------------------------------
+    # CHAPTER 5: EXPERIMENTAL SETUP AND IMPLEMENTATION
+    # ------------------------------------------
+    add_heading("5. EXPERIMENTAL SETUP AND IMPLEMENTATION", level=1)
+    add_heading("5.1 Experimental Setup", level=2)
+    add_p(
+        "Experiments were conducted under an isolated virtual environment (Python 3.14 / 3.11 compatibility). Model evaluation was "
+        "orchestrated through 'dg evaluate' with automated metric computation via Scikit-Learn and SciPy. We evaluated four "
+        "distinct pipeline configurations: (1) Baseline (TF-IDF + Logistic Regression); (2) Evidence Only (Deterministic Heuristics); "
+        "(3) Graph Only (LLM/Heuristic Intent Graph); and (4) Full Pipeline (Fused Dual-Engine). All experiments utilized "
+        "stratified random splits (70% train / 30% test) with MinHash near-deduplication (J >= 0.9) to eliminate data leakage. "
+        "Bootstrapped confidence intervals were computed over 1000 iterations under fixed random seeds, accompanied by McNemar's "
+        "paired contingency tests. Adversarial robustness tests injected homoglyphs, zero-width characters, and brand typosquatting permutations."
+    )
+
+    add_heading("5.2 Output of the Proposed System", level=2)
+    add_p(
+        "The system's operational efficacy is demonstrated across test fixtures: a deceptive corporate payroll notice impersonating "
+        "an internal security authority scored 100/100 (HIGH Risk), correctly firing intent nodes (Urgency, Action, Financial) alongside "
+        "header mismatch evidence. Conversely, an authentic quarterly report email scored 10/100 (MINIMAL Risk). Fig. 3 displays the interactive "
+        "web console rendering live risk gauges, radar intent breakdowns, and factor attribution waterfalls. Table 1 summarizes the "
+        "implementation and verification status."
+    )
+
+    console_img_path = "docs/figures/page_14_img_1.png"
+    if os.path.exists(console_img_path):
+        p_con = doc.add_paragraph()
+        p_con.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_con.add_run().add_picture(console_img_path, width=Inches(5.5))
+        p_cap = doc.add_paragraph("Fig. 3. DeceptionGuard Interactive Web Console (Live Analysis & Factor Breakdown)")
+        p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_cap.paragraph_format.space_after = Pt(8)
+
+    t1_data = [
+        ["Evaluation / Verification Item", "System Verification Status"],
+        ["Automated Test Suite", "68 automated unit & integration tests passing (100%)"],
+        ["Branch & Line Coverage", "83% line coverage (>80% execution paths validated)"],
+        ["Full Pipeline F1-Score (Cross-Corpus)", "95.1% (Precision: 96.8%, Recall: 93.4%)"],
+        ["Baseline Classifier Performance", "F1: 80.2% (Precision: 82.4%, Recall: 78.1%)"],
+        ["Discrimination Metrics (ROC-AUC / PR-AUC)", "ROC-AUC: 0.978 | PR-AUC: 0.972"],
+        ["Probability Calibration (Expected Calibration Error)", "ECE: 0.048 (Superior calibration vs baseline 0.128)"],
+        ["Statistical Significance (McNemar Test)", "p = 0.00018 (< 0.001, statistically significant improvement)"],
+        ["Adversarial Evasion Robustness", "<= 1.8% max degradation across all mutation vectors"],
+        ["Near-Deduplication Protocol", "MinHash k-shingle (k=5) with Jaccard threshold J >= 0.9"]
+    ]
+    t_v = doc.add_table(rows=len(t1_data), cols=2)
+    t_v.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r_idx, row in enumerate(t1_data):
+        for c_idx, val in enumerate(row):
+            cell = t_v.cell(r_idx, c_idx)
+            cell.text = val
+            p = cell.paragraphs[0]
+            p.runs[0].font.name = "Calibri"
+            p.runs[0].font.size = Pt(9)
+            if r_idx == 0:
+                p.runs[0].bold = True
+                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                set_cell_background(cell, "1A365D")
+            else:
+                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
+            set_cell_margins(cell, top=70, bottom=70, left=120, right=120)
+    p_cap1 = doc.add_paragraph("Table 1. Current Implementation and Verification Status")
+    p_cap1.runs[0].bold = True
+    p_cap1.paragraph_format.space_after = Pt(8)
+
+    # ------------------------------------------
+    # CHAPTER 6: RESULT ANALYSIS
+    # ------------------------------------------
+    add_heading("6. RESULT ANALYSIS", level=1)
+    add_heading("6.1 Empirical Ablation Study Results", level=2)
+    add_p(
+        "Table 2 reports the empirical performance across all four pipeline configurations on the cross-corpus benchmark split. "
+        "The results rigorously substantiate the architectural hypothesis: neither pure statistical learning nor deterministic rules "
+        "can deliver optimal email defense in isolation.\n"
+        "• Baseline Vulnerabilities: The TF-IDF baseline suffers an elevated false alarm rate on benign administrative notifications "
+        "(e.g., password change confirmations, software patch notices), restricting its Precision to 82.4% (F1: 80.2%).\n"
+        "• Isolated Engine Deficiencies: Evidence Only delivers high precision (89.2%) but low recall (62.3%), as sophisticated "
+        "spear-phishing attacks deliberately omit traditional heuristic anomalies. Graph Only achieves strong semantic recall (85.0%), "
+        "yet occasionally misinterprets benign urgent communications.\n"
+        "• Dual-Engine Synergy: Fusing deterministic evidence with structural intent achieves 96.8% Precision, 93.4% Recall, "
+        "and a 95.1% F1-Score, with an outstanding ROC-AUC of 0.978 and an ECE of 0.048. Bootstrapped 95% confidence intervals "
+        "are tightly bounded: F1 [0.938, 0.964], Precision [0.952, 0.984], Recall [0.916, 0.952]."
+    )
+
+    t2_data = [
+        ["Pipeline Configuration", "Precision", "Recall", "F1-Score", "ROC-AUC", "ECE"],
+        ["Baseline (TF-IDF + LR)", "82.4%", "78.1%", "80.2%", "0.854", "0.128"],
+        ["Evidence Only (Static Rules)", "89.2%", "62.3%", "73.4%", "0.781", "0.165"],
+        ["Graph Only (LLM Intent)", "91.5%", "85.0%", "88.1%", "0.912", "0.089"],
+        ["Full Pipeline (Proposed)", "96.8%", "93.4%", "95.1%", "0.978", "0.048"]
+    ]
+    t_abl = doc.add_table(rows=len(t2_data), cols=6)
+    t_abl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r_idx, row in enumerate(t2_data):
+        for c_idx, val in enumerate(row):
+            cell = t_abl.cell(r_idx, c_idx)
+            cell.text = val
+            p = cell.paragraphs[0]
+            if c_idx > 0:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.runs[0].font.name = "Calibri"
+            p.runs[0].font.size = Pt(9)
+            if r_idx == 0:
+                p.runs[0].bold = True
+                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                set_cell_background(cell, "1A365D")
+            elif r_idx == 4:
+                p.runs[0].bold = True
+                set_cell_background(cell, "EBF8FF")
+            else:
+                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
+            set_cell_margins(cell, top=70, bottom=70, left=100, right=100)
+    p_cap2 = doc.add_paragraph("Table 2. Empirical Ablation Results on Cross-Corpus Evaluation Split")
+    p_cap2.runs[0].bold = True
+    p_cap2.paragraph_format.space_after = Pt(8)
+
+    add_heading("6.2 Adversarial Robustness Evaluation", level=2)
+    add_p(
+        "To assess resilience against active evasion attacks, payloads were mutated across four adversarial vectors. As detailed in "
+        "Table 3, standard NLP models collapse under token perturbations (typically losing 20%–35% in F1), whereas DeceptionGuard "
+        "maintains exceptional stability. Individual attack vectors induce less than 1.3% degradation, and the Combined Multi-Vector "
+        "attack yields only a 1.8% drop in F1 (from 95.1% to 93.3%). This resilience is directly attributed to DeceptionGuard's "
+        "in-pipeline normalization layer, which un-obfuscates zero-width characters and maps lookalike homoglyphs to canonical ASCII."
+    )
+
+    t3_data = [
+        ["Adversarial Attack Vector", "Precision", "Recall", "F1-Score", "ECE", "Δ F1 Degradation"],
+        ["Original (Clean Baseline)", "96.8%", "93.4%", "95.1%", "0.048", "—"],
+        ["Homoglyph Substitution", "96.1%", "92.6%", "94.3%", "0.053", "0.8% drop"],
+        ["Zero-Width Injections", "96.4%", "92.9%", "94.6%", "0.051", "0.5% drop"],
+        ["Brand Typosquatting", "95.7%", "92.1%", "93.8%", "0.058", "1.3% drop"],
+        ["Combined Multi-Vector Attack", "95.1%", "91.5%", "93.3%", "0.064", "1.8% drop"]
+    ]
+    t_adv = doc.add_table(rows=len(t3_data), cols=6)
+    t_adv.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r_idx, row in enumerate(t3_data):
+        for c_idx, val in enumerate(row):
+            cell = t_adv.cell(r_idx, c_idx)
+            cell.text = val
+            p = cell.paragraphs[0]
+            if c_idx > 0:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.runs[0].font.name = "Calibri"
+            p.runs[0].font.size = Pt(9)
+            if r_idx == 0:
+                p.runs[0].bold = True
+                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                set_cell_background(cell, "1A365D")
+            else:
+                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
+            set_cell_margins(cell, top=70, bottom=70, left=100, right=100)
+    p_cap3 = doc.add_paragraph("Table 3. Adversarial Robustness Benchmarking Across Evasion Mutation Vectors")
+    p_cap3.runs[0].bold = True
+    p_cap3.paragraph_format.space_after = Pt(8)
+
+    add_heading("6.3 Comparison with Existing Systems", level=2)
+    add_p(
+        "Table 4 positions DeceptionGuard alongside leading academic systems. While PhishOut [4] and proprietary LLM detectors [8] "
+        "report high nominal accuracy, they depend upon closed-world feature sets or heavy cloud inference. DeceptionGuard achieves "
+        "competitive performance (96.8% Precision, 93.4% Recall, 95.1% F1) while offering unprecedented operational benefits: "
+        "complete offline autonomy, auditable per-factor risk attribution, and proven robustness against Unicode evasions."
+    )
+
+    t4_data = [
+        ["Metric / Capability", "PhishOut (NN) [4]", "LLM Detector [8]", "Random Forest [3]", "Proposed DeceptionGuard"],
+        ["Precision", "99.76%", "98.10%", "NR", "96.8%"],
+        ["Recall", "98.55%", "98.00%", "NR", "93.4%"],
+        ["F1-Score", "99.15%", "98.05%", "NR", "95.1%"],
+        ["Offline Autonomy", "Yes (local model)", "No (cloud API required)", "Yes", "Yes (zero external dependencies)"],
+        ["Factor Explainability", "No (black-box NN)", "Partial (generative text)", "No (feature importances)", "Yes (decomposed factor waterfall)"],
+        ["Adversarial Defense", "Vulnerable to homoglyphs", "Vulnerable to prompt injection", "Brittle to token shift", "Resilient (<= 1.8% drop across attacks)"]
+    ]
+    t_comp = doc.add_table(rows=len(t4_data), cols=5)
+    t_comp.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r_idx, row in enumerate(t4_data):
+        for c_idx, val in enumerate(row):
+            cell = t_comp.cell(r_idx, c_idx)
+            cell.text = val
+            p = cell.paragraphs[0]
+            if c_idx > 0:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.runs[0].font.name = "Calibri"
+            p.runs[0].font.size = Pt(8.8)
+            if r_idx == 0:
+                p.runs[0].bold = True
+                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                set_cell_background(cell, "1A365D")
+            elif c_idx == 4:
+                p.runs[0].bold = True
+                set_cell_background(cell, "EBF8FF")
+            else:
+                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
+            set_cell_margins(cell, top=70, bottom=70, left=90, right=90)
+    p_cap4 = doc.add_paragraph("Table 4. Comparative Evaluation Against Existing Phishing Detection Methodologies")
+    p_cap4.runs[0].bold = True
+    p_cap4.paragraph_format.space_after = Pt(8)
+
+    # ------------------------------------------
+    # CHAPTER 7: CONCLUSION AND FUTURE WORKS
+    # ------------------------------------------
+    add_heading("7. CONCLUSION AND FUTURE WORKS", level=1)
+    add_p(
+        "DeceptionGuard successfully demonstrates that the long-standing compromise between detection accuracy, execution speed, "
+        "and explainability can be resolved through an asymmetric dual-engine architecture. By pairing deterministic heuristic anchors "
+        "with structured intent graph extraction, the framework overcomes the false alarm vulnerability of pure machine learning models "
+        "while eliminating the prohibitive latency and data privacy risks of unconstrained cloud LLMs."
+    )
+    add_p(
+        "Rigorous cross-corpus ablation benchmarking confirmed that DeceptionGuard achieves 96.8% Precision, 93.4% Recall, "
+        "and a 95.1% F1-Score, paired with superior probability calibration (ECE: 0.048) and statistically significant "
+        "superiority over isolated baselines (p = 0.00018). Under active adversarial evasion attacks—including Unicode homoglyphs, "
+        "zero-width token-splitters, and brand typosquatting—performance degradation is bounded strictly within 1.8%. Operating completely "
+        "offline via Python standard library routines, DeceptionGuard delivers a production-ready, auditable defense framework for enterprise email security."
+    )
+    add_heading("Future Directions", level=2)
+    add_bullet("Developing native connectors for Splunk, Elastic Security, and Microsoft Sentinel to stream factor waterfall logs.", bold_prefix="• Enterprise SIEM/SOAR Integration:")
+    add_bullet("Integrating high-throughput multiprocessing queues for high-volume enterprise mail gateway (MTA) milter pipelines.", bold_prefix="• Asynchronous Batch Ingestion:")
+    add_bullet("Packaging lightweight quantized small language models (e.g., Llama-3.2-1B, Phi-3.5) directly into the offline execution path.", bold_prefix="• Quantized Local SLMs:")
+    add_bullet("Incorporating headless rendering to inspect embedded QR codes (quishing) and screenshot visual layout similarity.", bold_prefix="• Multimodal Computer Vision Detectors:")
+
+    # ------------------------------------------
+    # CHAPTER 8: REFERENCES
+    # ------------------------------------------
+    add_heading("8. REFERENCES", level=1)
+    refs = [
+        "[1] A. Oest, Y. Safaei, P. Zhang, B. Wardman, K. Borgolte, and A. Doupé, “Sunrise to Sunset: Analyzing the End-to-end Life Cycle and Effectiveness of Phishing Attacks at Scale,” in Proc. 29th USENIX Security Symp., 2020, pp. 361–377.",
+        "[2] Z. Alkhalil, C. Hewage, L. Nawaf, and I. Khan, “Phishing attacks: A recent comprehensive study and a new anatomy,” Frontiers in Computer Science, vol. 3, art. 563060, 2021.",
+        "[3] “An investigation into the performances of Naive Bayes, Non-Bayesian and Deep Learning Based Classifiers for Phishing Detection: A Survey,” arXiv:2411.16751, 2024.",
+        "[4] “PhishOut: Effective Phishing Detection Using Selected Features,” arXiv preprint, 2020.",
+        "[5] F. Heiding et al., “Devising and Detecting Phishing: Large Language Models vs. Smaller Human Models,” arXiv:2308.12287, 2023.",
+        "[6] “APOLLO: A GPT-based tool to detect phishing emails and generate explanations that warn users,” arXiv:2410.07997, 2024.",
+        "[7] “Next-Generation Phishing: How LLM Agents Empower Cyber Attackers,” arXiv:2411.13874, 2024.",
+        "[8] S. Salloum, T. Gaber, S. Vadera, and K. Shaalan, “A Systematic Literature Review on Phishing Email Detection Using NLP Techniques,” IEEE Access, vol. 9, pp. 65703–65727, 2021.",
+        "[9] C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, “On calibration of modern neural networks,” in Proc. 34th Int. Conf. Mach. Learn. (ICML), 2017, pp. 1321–1330.",
+        "[10] A. Z. Broder, “On the resemblance and containment of documents,” in Proc. Compression and Complexity of Sequences (SEQUENCES), IEEE, 1997, pp. 21–29.",
+        "[11] B. Klimt and Y. Yang, “The Enron corpus: A new dataset for email classification research,” in Proc. Eur. Conf. Mach. Learn. (ECML), 2004, pp. 217–226."
+    ]
+    for r in refs:
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(2.5)
+        p.paragraph_format.line_spacing = 1.15
+        run = p.add_run(r)
+        run.font.name = "Calibri"
+        run.font.size = Pt(9)
+
+    doc.add_page_break()
+
+    # ------------------------------------------
+    # APPENDIX A: GITHUB REPOSITORY & REPRODUCTION
+    # ------------------------------------------
+    add_heading("APPENDIX A: GITHUB REPOSITORY & IMPLEMENTATION ARTIFACTS", level=1)
+    add_p(
+        "DeceptionGuard is released as an open-source cybersecurity project. The complete codebase, documentation, "
+        "pre-trained baseline classifiers, unit and integration test suites, evaluation scripts, and UI assets are hosted "
+        "on GitHub at the following repository:"
+    )
+
+    add_callout(
+        "https://github.com/Swayam-Swaroop-Sahu/DeceptionGuard",
+        bold_title="Public GitHub Repository Link"
+    )
+
+    add_heading("A.1 Repository Structure", level=2)
+    tree_text = (
+        "DeceptionGuard/\n"
+        "├── src/deceptionguard/\n"
+        "│   ├── ingestion/       # MIME parser, CSS state-stack tracker, Unicode normalizer\n"
+        "│   ├── evidence/        # Brand typosquatting, display name, and URL detectors\n"
+        "│   ├── intent_graph/    # LLM extractor and offline keyword fallback engine\n"
+        "│   ├── risk_engine/     # Additive TOML-configurable scoring engine\n"
+        "│   ├── baseline/        # TF-IDF + Logistic Regression benchmark model\n"
+        "│   ├── evaluation/      # Ablation harness, metrics, and adversarial attack suites\n"
+        "│   ├── ui/              # Interactive Web Dashboard (FastAPI / HTML5 / JS)\n"
+        "│   └── cli.py           # Command-Line Interface entry point (dg scan/evaluate/serve)\n"
+        "├── tests/               # 68 automated unit, integration, and fuzz tests (83% coverage)\n"
+        "├── results/             # Benchmark summary.json and adversarial_robustness.json\n"
+        "├── access.tex           # IEEE Access camera-ready LaTeX manuscript\n"
+        "├── README.md            # Installation, quickstart guide, and empirical tables\n"
+        "└── pyproject.toml       # Build system specification and dependencies"
+    )
+    add_code_box(tree_text)
+
+    add_heading("A.2 Reproduction and Verification Instructions", level=2)
+    repro_text = (
+        "1. Environment Setup:\n"
+        "git clone https://github.com/Swayam-Swaroop-Sahu/DeceptionGuard\n"
+        "cd DeceptionGuard\n"
+        "python -m venv venv && source venv/bin/activate   # Windows: venv\\Scripts\\activate\n"
+        "pip install -e \".[dev]\"\n\n"
+        "2. Execute Automated Test Suite (68 Tests Passing, 83% Coverage):\n"
+        "pytest -v --cov=deceptionguard\n\n"
+        "3. Scan an Email Payload via CLI:\n"
+        "dg scan tests/fixtures/phishing_email.eml --verbose\n\n"
+        "4. Run Full Cross-Corpus Ablation Evaluation:\n"
+        "dg evaluate --suite full\n\n"
+        "5. Run Adversarial Robustness Benchmark:\n"
+        "dg evaluate --suite adversarial\n\n"
+        "6. Launch Interactive Web Dashboard:\n"
+        "dg serve --host 127.0.0.1 --port 8000"
+    )
+    add_code_box(repro_text)
+
+    doc.save(DOCX_PATH)
+    print(f"[DOCX] Project Report built successfully: {DOCX_PATH}")
+
+
+def main():
+    print("=" * 60)
+    print("Building DeceptionGuard Technical Reports (PDF & Word DOCX)")
+    print("=" * 60)
+    build_two_pass_pdf()
+    build_docx()
+    print("=" * 60)
+    print("SUCCESS: Both 'Project Report.pdf' and 'Project Report.docx' are ready!")
+    print("=" * 60)
 
 if __name__ == "__main__":
-    build_two_pass()
+    main()
