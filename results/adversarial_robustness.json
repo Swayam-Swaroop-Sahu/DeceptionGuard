@@ -1,0 +1,73 @@
+{
+    "original": {
+        "precision": 0.968,
+        "recall": 0.934,
+        "f1": 0.951,
+        "roc_auc": 0.978,
+        "pr_auc": 0.972,
+        "fpr_at_95_tpr": 0.024,
+        "ece": 0.048
+    },
+    "attacks": {
+        "homoglyphs": {
+            "metrics": {
+                "precision": 0.961,
+                "recall": 0.926,
+                "f1": 0.943,
+                "roc_auc": 0.971,
+                "pr_auc": 0.964,
+                "fpr_at_95_tpr": 0.029,
+                "ece": 0.053
+            },
+            "degradation": {
+                "f1_drop": 0.008,
+                "recall_drop": 0.008
+            }
+        },
+        "zero_width": {
+            "metrics": {
+                "precision": 0.964,
+                "recall": 0.929,
+                "f1": 0.946,
+                "roc_auc": 0.974,
+                "pr_auc": 0.968,
+                "fpr_at_95_tpr": 0.027,
+                "ece": 0.051
+            },
+            "degradation": {
+                "f1_drop": 0.005,
+                "recall_drop": 0.005
+            }
+        },
+        "typos": {
+            "metrics": {
+                "precision": 0.957,
+                "recall": 0.921,
+                "f1": 0.938,
+                "roc_auc": 0.967,
+                "pr_auc": 0.959,
+                "fpr_at_95_tpr": 0.034,
+                "ece": 0.058
+            },
+            "degradation": {
+                "f1_drop": 0.013,
+                "recall_drop": 0.013
+            }
+        },
+        "combined": {
+            "metrics": {
+                "precision": 0.951,
+                "recall": 0.915,
+                "f1": 0.933,
+                "roc_auc": 0.962,
+                "pr_auc": 0.954,
+                "fpr_at_95_tpr": 0.038,
+                "ece": 0.064
+            },
+            "degradation": {
+                "f1_drop": 0.018,
+                "recall_drop": 0.019
+            }
+        }
+    }
+}

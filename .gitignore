@@ -30,7 +30,9 @@ data/processed/*.csv
 !data/processed/placeholder_train.csv
 !data/processed/placeholder_test.csv
 datasets/
-results/
+results/*
+!results/summary.json
+!results/adversarial_robustness.json
 
 # IDEs
 .vscode/

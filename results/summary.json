@@ -1,0 +1,43 @@
+{
+    "baseline": {
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "fpr_at_95_tpr": 0.0,
+        "ece": 0.20827416277819932,
+        "confidence_intervals": {}
+    },
+    "evidence_only": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6666666666666666,
+        "roc_auc": 0.75,
+        "pr_auc": 0.75,
+        "fpr_at_95_tpr": 1.0,
+        "ece": 0.375,
+        "confidence_intervals": {}
+    },
+    "graph_only": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6666666666666666,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "fpr_at_95_tpr": 0.0,
+        "ece": 0.3,
+        "confidence_intervals": {}
+    },
+    "full_pipeline": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "fpr_at_95_tpr": 0.0,
+        "ece": 0.175,
+        "confidence_intervals": {}
+    },
+    "mcnemar_baseline_vs_full": 1.0
+}
