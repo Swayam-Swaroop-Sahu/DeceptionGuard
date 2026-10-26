@@ -43,15 +43,15 @@ class AcademicNumberedCanvas(canvas.Canvas):
             if pno > 1:
                 self.saveState()
                 self.setFont("Helvetica-Bold", 7.5)
-                self.setFillColor(colors.HexColor("#4A5568"))
+                self.setFillColor(colors.black)
                 self.drawString(54, 750, "BCSE410L – CYBER SECURITY PROJECT  |  DECEPTIONGUARD TECHNICAL REPORT")
-                self.setStrokeColor(colors.HexColor("#CBD5E0"))
-                self.setLineWidth(0.6)
+                self.setStrokeColor(colors.black)
+                self.setLineWidth(0.5)
                 self.line(54, 744, 558, 744)
 
                 self.line(54, 46, 558, 46)
                 self.setFont("Helvetica", 8)
-                self.setFillColor(colors.HexColor("#718096"))
+                self.setFillColor(colors.black)
                 self.drawString(54, 34, "School of Computer Science and Engineering (SCOPE)")
 
                 if pno == 2:
@@ -93,11 +93,11 @@ def generate_pdf(toc_page_map=None):
 
     styles = getSampleStyleSheet()
 
-    c_primary = colors.HexColor("#1A365D")
-    c_accent = colors.HexColor("#2B6CB0")
-    c_dark = colors.HexColor("#2D3748")
-    c_light_bg = colors.HexColor("#F7FAFC")
-    c_callout_bg = colors.HexColor("#EBF8FF")
+    c_primary = colors.black
+    c_accent = colors.black
+    c_dark = colors.black
+    c_light_bg = colors.white
+    c_callout_bg = colors.white
 
     styles.add(ParagraphStyle(
         name="TitleCourse",
@@ -198,14 +198,14 @@ def generate_pdf(toc_page_map=None):
         fontName="Courier",
         fontSize=8.0,
         leading=10.8,
-        textColor=colors.HexColor("#1A202C")
+        textColor=colors.black
     ))
     styles.add(ParagraphStyle(
         name="FigCaption",
         fontName="Helvetica-Oblique",
         fontSize=8.2,
         leading=10.5,
-        textColor=colors.HexColor("#4A5568"),
+        textColor=colors.black,
         alignment=1,
         spaceBefore=3,
         spaceAfter=6
@@ -271,7 +271,7 @@ def generate_pdf(toc_page_map=None):
 
     # Abstract
     story.append(Paragraph("ABSTRACT", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=1, color=c_accent, spaceBefore=2, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=2, spaceAfter=8))
 
     abstract_p1 = (
         "Phishing attacks remain one of the most prolific and damaging entry vectors in enterprise cybersecurity. Attackers "
@@ -313,7 +313,7 @@ def generate_pdf(toc_page_map=None):
     t_callout = Table([[Paragraph(callout_box, styles["ReportBody"])]], colWidths=[504])
     t_callout.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), c_callout_bg),
-        ('BOX', (0,0), (-1,-1), 1, c_accent),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.black),
         ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
         ('LEFTPADDING', (0,0), (-1,-1), 10),
@@ -331,7 +331,7 @@ def generate_pdf(toc_page_map=None):
 
     # Table of Contents
     story.append(Paragraph("TABLE OF CONTENTS", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=1, color=c_accent, spaceBefore=2, spaceAfter=10))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=2, spaceAfter=10))
 
     toc_items = [
         ("1. INTRODUCTION", toc_page_map["ch1"], True),
@@ -368,7 +368,7 @@ def generate_pdf(toc_page_map=None):
         style_name = "TOCBold" if is_bold else "TOCLine"
         dots = ". " * 38
         p_title = Paragraph(title, styles[style_name])
-        p_dots = Paragraph(f"<font color='#CBD5E0'>{dots}</font>", styles["TOCLine"])
+        p_dots = Paragraph(f"<font color='#000000'>{dots}</font>", styles["TOCLine"])
         p_num = Paragraph(f"<b>{pno}</b>" if is_bold else pno, styles[style_name])
         toc_table_data.append([p_title, p_dots, p_num])
 
@@ -384,7 +384,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 1
     story.append(Paragraph("1. INTRODUCTION", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     story.append(Paragraph("1.1 Background", styles["SectionTitle"]))
     bg_p = (
@@ -429,7 +429,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 2
     story.append(Paragraph("2. PROJECT DESCRIPTION AND GOALS", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     story.append(Paragraph("2.1 Literature Review", styles["SectionTitle"]))
     lit_p = (
@@ -499,7 +499,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 3
     story.append(Paragraph("3. TECHNICAL SPECIFICATION", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     story.append(Paragraph("3.1 Requirements", styles["SectionTitle"]))
     story.append(Paragraph("3.1.1 Functional Requirements", styles["SubsectionTitle"]))
@@ -548,7 +548,10 @@ def generate_pdf(toc_page_map=None):
     t_spec = Table(spec_data, colWidths=[110, 200, 194])
     t_spec.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), c_light_bg),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('LINEABOVE', (0,0), (-1,0), 1.0, colors.black),
+        ('LINEBELOW', (0,0), (-1,0), 0.8, colors.black),
+        ('LINEBELOW', (0,-1), (-1,-1), 1.0, colors.black),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -558,7 +561,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 4
     story.append(Paragraph("4. DESIGN APPROACH AND DETAILS", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     story.append(Paragraph("4.1 System Architecture", styles["SectionTitle"]))
     arch_p = (
@@ -595,8 +598,8 @@ def generate_pdf(toc_page_map=None):
     """
     t_alg1 = Table([[Paragraph(alg1_box, styles["AlgorithmText"])]], colWidths=[504])
     t_alg1.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#EDF2F7")),
-        ('BOX', (0,0), (-1,-1), 0.8, colors.HexColor("#CBD5E0")),
+        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.black),
         ('LEFTPADDING', (0,0), (-1,-1), 10),
         ('RIGHTPADDING', (0,0), (-1,-1), 10),
         ('TOPPADDING', (0,0), (-1,-1), 5),
@@ -618,8 +621,8 @@ def generate_pdf(toc_page_map=None):
     """
     t_alg2 = Table([[Paragraph(alg2_box, styles["AlgorithmText"])]], colWidths=[504])
     t_alg2.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#EDF2F7")),
-        ('BOX', (0,0), (-1,-1), 0.8, colors.HexColor("#CBD5E0")),
+        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.black),
         ('LEFTPADDING', (0,0), (-1,-1), 10),
         ('RIGHTPADDING', (0,0), (-1,-1), 10),
         ('TOPPADDING', (0,0), (-1,-1), 5),
@@ -630,7 +633,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 5
     story.append(Paragraph("5. EXPERIMENTAL SETUP AND IMPLEMENTATION", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     story.append(Paragraph("5.1 Experimental Setup", styles["SectionTitle"]))
     setup_p = (
@@ -675,7 +678,10 @@ def generate_pdf(toc_page_map=None):
     t_impl = Table(t1_data, colWidths=[220, 284])
     t_impl.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), c_light_bg),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('LINEABOVE', (0,0), (-1,0), 1.0, colors.black),
+        ('LINEBELOW', (0,0), (-1,0), 0.8, colors.black),
+        ('LINEBELOW', (0,-1), (-1,-1), 1.0, colors.black),
         ('TOPPADDING', (0,0), (-1,-1), 2),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -687,7 +693,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 6
     story.append(Paragraph("6. RESULT ANALYSIS", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     story.append(Paragraph("6.1 Empirical Ablation Study Results", styles["SectionTitle"]))
     abl_p = (
@@ -715,7 +721,10 @@ def generate_pdf(toc_page_map=None):
     t_abl = Table(t_abl_data, colWidths=[154, 70, 70, 70, 70, 70])
     t_abl.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), c_light_bg),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('LINEABOVE', (0,0), (-1,0), 1.0, colors.black),
+        ('LINEBELOW', (0,0), (-1,0), 0.8, colors.black),
+        ('LINEBELOW', (0,-1), (-1,-1), 1.0, colors.black),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
@@ -745,7 +754,10 @@ def generate_pdf(toc_page_map=None):
     t_adv = Table(t_adv_data, colWidths=[154, 70, 70, 70, 70, 70])
     t_adv.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), c_light_bg),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('LINEABOVE', (0,0), (-1,0), 1.0, colors.black),
+        ('LINEBELOW', (0,0), (-1,0), 0.8, colors.black),
+        ('LINEBELOW', (0,-1), (-1,-1), 1.0, colors.black),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ('TOPPADDING', (0,0), (-1,-1), 2.5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
@@ -775,7 +787,10 @@ def generate_pdf(toc_page_map=None):
     t_comp = Table(t_comp_data, colWidths=[114, 95, 100, 95, 100])
     t_comp.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), c_light_bg),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E0")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('LINEABOVE', (0,0), (-1,0), 1.0, colors.black),
+        ('LINEBELOW', (0,0), (-1,0), 0.8, colors.black),
+        ('LINEBELOW', (0,-1), (-1,-1), 1.0, colors.black),
         ('ALIGN', (1,0), (-1,-1), 'CENTER'),
         ('TOPPADDING', (0,0), (-1,-1), 2),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
@@ -787,7 +802,7 @@ def generate_pdf(toc_page_map=None):
 
     # Chapter 7
     story.append(Paragraph("7. CONCLUSION AND FUTURE WORKS", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     conc_p = (
         "DeceptionGuard successfully demonstrates that the long-standing compromise between detection accuracy, execution speed, "
@@ -815,7 +830,7 @@ def generate_pdf(toc_page_map=None):
     # Chapter 8
     story.append(Spacer(1, 8))
     story.append(Paragraph("8. REFERENCES", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     refs = [
         "[1] A. Oest, Y. Safaei, P. Zhang, B. Wardman, K. Borgolte, and A. Doupé, “Sunrise to Sunset: Analyzing the End-to-end Life Cycle and Effectiveness of Phishing Attacks at Scale,” in <i>Proc. 29th USENIX Security Symp.</i>, 2020, pp. 361–377.",
@@ -836,7 +851,7 @@ def generate_pdf(toc_page_map=None):
 
     # Appendix A
     story.append(Paragraph("APPENDIX A: GITHUB REPOSITORY & IMPLEMENTATION ARTIFACTS", styles["ChapterTitle"]))
-    story.append(HRFlowable(width="100%", thickness=1, color=c_accent, spaceBefore=1, spaceAfter=8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.black, spaceBefore=1, spaceAfter=8))
 
     app_intro = (
         "DeceptionGuard is released as an open-source cybersecurity project. The complete codebase, documentation, "
@@ -847,12 +862,12 @@ def generate_pdf(toc_page_map=None):
 
     repo_url_box = """
     <b>Public GitHub Repository:</b><br/>
-    <font color="#1A365D" size="10.5"><b>https://github.com/Swayam-Swaroop-Sahu/DeceptionGuard</b></font>
+    <font color="#000000" size="10.5"><b>https://github.com/Swayam-Swaroop-Sahu/DeceptionGuard</b></font>
     """
     t_url = Table([[Paragraph(repo_url_box, styles["ReportBody"])]], colWidths=[504])
     t_url.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#EBF8FF")),
-        ('BOX', (0,0), (-1,-1), 1, c_accent),
+        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.black),
         ('LEFTPADDING', (0,0), (-1,-1), 12),
         ('RIGHTPADDING', (0,0), (-1,-1), 12),
         ('TOPPADDING', (0,0), (-1,-1), 6),
@@ -976,7 +991,7 @@ def build_docx():
         hrun.font.name = "Arial"
         hrun.font.size = Pt(8)
         hrun.font.bold = True
-        hrun.font.color.rgb = RGBColor(0x4A, 0x55, 0x68)
+        hrun.font.color.rgb = RGBColor(0, 0, 0)
 
         # Footer for subsequent pages
         footer = section.footer
@@ -985,7 +1000,7 @@ def build_docx():
         frun = fp.add_run("School of Computer Science and Engineering (SCOPE)\t")
         frun.font.name = "Arial"
         frun.font.size = Pt(8.5)
-        frun.font.color.rgb = RGBColor(0x71, 0x80, 0x96)
+        frun.font.color.rgb = RGBColor(0, 0, 0)
 
     # Style Helpers
     def set_cell_background(cell, hex_color):
@@ -999,7 +1014,7 @@ def build_docx():
         )
         cell._tc.get_or_add_tcPr().append(tcMar)
 
-    def add_title(text, font_size=16, color=(0x1A, 0x36, 0x5D), space_after=10, bold=True, center=True):
+    def add_title(text, font_size=16, color=(0, 0, 0), space_after=10, bold=True, center=True):
         p = doc.add_paragraph()
         if center:
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -1016,19 +1031,17 @@ def build_docx():
         run = p.add_run(text)
         run.bold = True
         run.font.name = "Arial"
+        run.font.color.rgb = RGBColor(0, 0, 0)
         if level == 1:
-            run.font.size = Pt(13.5)
-            run.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+            run.font.size = Pt(13)
             p.paragraph_format.space_before = Pt(14)
             p.paragraph_format.space_after = Pt(4)
         elif level == 2:
             run.font.size = Pt(11)
-            run.font.color.rgb = RGBColor(0x2B, 0x6C, 0xB0)
             p.paragraph_format.space_before = Pt(10)
             p.paragraph_format.space_after = Pt(3)
         elif level == 3:
             run.font.size = Pt(9.8)
-            run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
             p.paragraph_format.space_before = Pt(8)
             p.paragraph_format.space_after = Pt(2)
         p.paragraph_format.keep_with_next = True
@@ -1044,11 +1057,11 @@ def build_docx():
             br.bold = True
             br.font.name = "Calibri"
             br.font.size = Pt(10)
-            br.font.color.rgb = RGBColor(0x1A, 0x20, 0x2C)
+            br.font.color.rgb = RGBColor(0, 0, 0)
         run = p.add_run(text)
         run.font.name = "Calibri"
         run.font.size = Pt(10)
-        run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+        run.font.color.rgb = RGBColor(0, 0, 0)
         return p
 
     def add_bullet(text, bold_prefix=""):
@@ -1060,18 +1073,66 @@ def build_docx():
             br.bold = True
             br.font.name = "Calibri"
             br.font.size = Pt(9.5)
-            br.font.color.rgb = RGBColor(0x1A, 0x20, 0x2C)
+            br.font.color.rgb = RGBColor(0, 0, 0)
         run = p.add_run(text)
         run.font.name = "Calibri"
         run.font.size = Pt(9.5)
-        run.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+        run.font.color.rgb = RGBColor(0, 0, 0)
         return p
+
+    def set_cell_borders(cell, top="single", bottom="single", left="single", right="single", sz="4", color="000000"):
+        tcBorders = parse_xml(
+            f'<w:tcBorders {nsdecls("w")}>'
+            f'<w:top w:val="{top}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+            f'<w:left w:val="{left}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+            f'<w:bottom w:val="{bottom}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+            f'<w:right w:val="{right}" w:sz="{sz}" w:space="0" w:color="{color}"/>'
+            f'</w:tcBorders>'
+        )
+        cell._tc.get_or_add_tcPr().append(tcBorders)
+
+    def set_table_borders(table):
+        tblPr = table._tbl.tblPr
+        borders = parse_xml(
+            f'<w:tblBorders {nsdecls("w")}>'
+            f'<w:top w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
+            f'<w:bottom w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
+            f'<w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+            f'<w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+            f'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+            f'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+            f'</w:tblBorders>'
+        )
+        tblPr.append(borders)
+
+    def format_table(table, data, center_cols=None, bold_row=None, bold_col=None):
+        set_table_borders(table)
+        for r_idx, row in enumerate(data):
+            for c_idx, val in enumerate(row):
+                cell = table.cell(r_idx, c_idx)
+                cell.text = val
+                p = cell.paragraphs[0]
+                if center_cols and c_idx in center_cols:
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = p.runs[0]
+                run.font.name = "Calibri"
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0, 0, 0)
+                set_cell_background(cell, "FFFFFF")
+                if r_idx == 0:
+                    run.bold = True
+                elif bold_row is not None and r_idx == bold_row:
+                    run.bold = True
+                elif bold_col is not None and c_idx == bold_col:
+                    run.bold = True
+                set_cell_margins(cell, top=70, bottom=70, left=100, right=100)
 
     def add_callout(text, bold_title=""):
         t = doc.add_table(rows=1, cols=1)
         t.alignment = WD_TABLE_ALIGNMENT.CENTER
         cell = t.cell(0, 0)
-        set_cell_background(cell, "EBF8FF")
+        set_cell_background(cell, "FFFFFF")
+        set_cell_borders(cell, top="single", bottom="single", left="single", right="single", sz="4", color="000000")
         set_cell_margins(cell, top=140, bottom=140, left=200, right=200)
         p = cell.paragraphs[0]
         p.paragraph_format.space_after = Pt(0)
@@ -1080,31 +1141,32 @@ def build_docx():
             bt.bold = True
             bt.font.name = "Arial"
             bt.font.size = Pt(10)
-            bt.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+            bt.font.color.rgb = RGBColor(0, 0, 0)
         rt = p.add_run(text)
         rt.font.name = "Calibri"
         rt.font.size = Pt(9.5)
-        rt.font.color.rgb = RGBColor(0x2D, 0x37, 0x48)
+        rt.font.color.rgb = RGBColor(0, 0, 0)
         doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     def add_code_box(code_text):
         t = doc.add_table(rows=1, cols=1)
         t.alignment = WD_TABLE_ALIGNMENT.CENTER
         cell = t.cell(0, 0)
-        set_cell_background(cell, "EDF2F7")
+        set_cell_background(cell, "FFFFFF")
+        set_cell_borders(cell, top="single", bottom="single", left="single", right="single", sz="4", color="000000")
         set_cell_margins(cell, top=120, bottom=120, left=180, right=180)
         p = cell.paragraphs[0]
         p.paragraph_format.space_after = Pt(0)
         run = p.add_run(code_text)
         run.font.name = "Consolas"
         run.font.size = Pt(8.5)
-        run.font.color.rgb = RGBColor(0x1A, 0x20, 0x2C)
+        run.font.color.rgb = RGBColor(0, 0, 0)
         doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     # ------------------------------------------
     # TITLE PAGE
     # ------------------------------------------
-    add_title("BCSE410L – CYBER SECURITY PROJECT", font_size=12.5, color=(0x2B, 0x6C, 0xB0), space_after=15)
+    add_title("BCSE410L – CYBER SECURITY PROJECT", font_size=12.5, color=(0, 0, 0), space_after=15)
 
     logo_path = "docs/figures/page_1_img_1.jpeg"
     if os.path.exists(logo_path):
@@ -1116,7 +1178,7 @@ def build_docx():
     add_title(
         "DECEPTIONGUARD: A LOCAL-FIRST DUAL-ENGINE FRAMEWORK FOR PHISHING EMAIL ANALYSIS COMBINING DETERMINISTIC HEURISTICS AND LARGE LANGUAGE MODELS",
         font_size=16.5,
-        color=(0x1A, 0x36, 0x5D),
+        color=(0, 0, 0),
         space_after=25
     )
 
@@ -1134,7 +1196,7 @@ def build_docx():
     rs = p_sup.add_run("Under the Supervision of\nDr. Anto S\nAssociate Professor")
     rs.bold = True
     rs.font.size = Pt(10.5)
-    rs.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+    rs.font.color.rgb = RGBColor(0, 0, 0)
 
     p_dept = doc.add_paragraph()
     p_dept.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -1225,7 +1287,7 @@ def build_docx():
         r.font.size = Pt(8.8)
         if line.startswith(("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "APPENDIX")):
             r.bold = True
-            r.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+            r.font.color.rgb = RGBColor(0, 0, 0)
 
     doc.add_page_break()
 
@@ -1378,20 +1440,7 @@ def build_docx():
     ]
     t = doc.add_table(rows=len(t_spec_data), cols=3)
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row in enumerate(t_spec_data):
-        for c_idx, val in enumerate(row):
-            cell = t.cell(r_idx, c_idx)
-            cell.text = val
-            p = cell.paragraphs[0]
-            p.runs[0].font.name = "Calibri"
-            p.runs[0].font.size = Pt(9)
-            if r_idx == 0:
-                p.runs[0].bold = True
-                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                set_cell_background(cell, "1A365D")
-            else:
-                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
-            set_cell_margins(cell, top=80, bottom=80, left=120, right=120)
+    format_table(t, t_spec_data)
     doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
     # ------------------------------------------
@@ -1494,20 +1543,7 @@ def build_docx():
     ]
     t_v = doc.add_table(rows=len(t1_data), cols=2)
     t_v.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row in enumerate(t1_data):
-        for c_idx, val in enumerate(row):
-            cell = t_v.cell(r_idx, c_idx)
-            cell.text = val
-            p = cell.paragraphs[0]
-            p.runs[0].font.name = "Calibri"
-            p.runs[0].font.size = Pt(9)
-            if r_idx == 0:
-                p.runs[0].bold = True
-                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                set_cell_background(cell, "1A365D")
-            else:
-                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
-            set_cell_margins(cell, top=70, bottom=70, left=120, right=120)
+    format_table(t_v, t1_data)
     p_cap1 = doc.add_paragraph("Table 1. Current Implementation and Verification Status")
     p_cap1.runs[0].bold = True
     p_cap1.paragraph_format.space_after = Pt(8)
@@ -1540,25 +1576,7 @@ def build_docx():
     ]
     t_abl = doc.add_table(rows=len(t2_data), cols=6)
     t_abl.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row in enumerate(t2_data):
-        for c_idx, val in enumerate(row):
-            cell = t_abl.cell(r_idx, c_idx)
-            cell.text = val
-            p = cell.paragraphs[0]
-            if c_idx > 0:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.runs[0].font.name = "Calibri"
-            p.runs[0].font.size = Pt(9)
-            if r_idx == 0:
-                p.runs[0].bold = True
-                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                set_cell_background(cell, "1A365D")
-            elif r_idx == 4:
-                p.runs[0].bold = True
-                set_cell_background(cell, "EBF8FF")
-            else:
-                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
-            set_cell_margins(cell, top=70, bottom=70, left=100, right=100)
+    format_table(t_abl, t2_data, center_cols=[1, 2, 3, 4, 5], bold_row=4)
     p_cap2 = doc.add_paragraph("Table 2. Empirical Ablation Results on Cross-Corpus Evaluation Split")
     p_cap2.runs[0].bold = True
     p_cap2.paragraph_format.space_after = Pt(8)
@@ -1582,22 +1600,7 @@ def build_docx():
     ]
     t_adv = doc.add_table(rows=len(t3_data), cols=6)
     t_adv.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row in enumerate(t3_data):
-        for c_idx, val in enumerate(row):
-            cell = t_adv.cell(r_idx, c_idx)
-            cell.text = val
-            p = cell.paragraphs[0]
-            if c_idx > 0:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.runs[0].font.name = "Calibri"
-            p.runs[0].font.size = Pt(9)
-            if r_idx == 0:
-                p.runs[0].bold = True
-                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                set_cell_background(cell, "1A365D")
-            else:
-                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
-            set_cell_margins(cell, top=70, bottom=70, left=100, right=100)
+    format_table(t_adv, t3_data, center_cols=[1, 2, 3, 4, 5])
     p_cap3 = doc.add_paragraph("Table 3. Adversarial Robustness Benchmarking Across Evasion Mutation Vectors")
     p_cap3.runs[0].bold = True
     p_cap3.paragraph_format.space_after = Pt(8)
@@ -1621,25 +1624,7 @@ def build_docx():
     ]
     t_comp = doc.add_table(rows=len(t4_data), cols=5)
     t_comp.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for r_idx, row in enumerate(t4_data):
-        for c_idx, val in enumerate(row):
-            cell = t_comp.cell(r_idx, c_idx)
-            cell.text = val
-            p = cell.paragraphs[0]
-            if c_idx > 0:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.runs[0].font.name = "Calibri"
-            p.runs[0].font.size = Pt(8.8)
-            if r_idx == 0:
-                p.runs[0].bold = True
-                p.runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                set_cell_background(cell, "1A365D")
-            elif c_idx == 4:
-                p.runs[0].bold = True
-                set_cell_background(cell, "EBF8FF")
-            else:
-                set_cell_background(cell, "F7FAFC" if r_idx % 2 == 1 else "FFFFFF")
-            set_cell_margins(cell, top=70, bottom=70, left=90, right=90)
+    format_table(t_comp, t4_data, center_cols=[1, 2, 3, 4], bold_col=4)
     p_cap4 = doc.add_paragraph("Table 4. Comparative Evaluation Against Existing Phishing Detection Methodologies")
     p_cap4.runs[0].bold = True
     p_cap4.paragraph_format.space_after = Pt(8)
